@@ -1,6 +1,6 @@
 [Unit]
 Description=iPracticom Sweeper - run health check every 5 minutes
-Documentation=https://github.com/dizeldz20-ux/ipracticom-sweeper-private
+Documentation=https://github.com/dizeldz20-ux/SWEEPER-AGENT-V2
 
 [Timer]
 # Run 2 minutes after boot, then every 5 minutes

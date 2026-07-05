@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # iPracticom Sweeper — Update to latest version from the public repo.
 #
-# Pulls the latest code from github.com/dizeldz20-ux/ipracticom-sweeper-private
-# (master branch), reinstalls the Python package + systemd units, preserves
+# Pulls the latest code from github.com/dizeldz20-ux/SWEEPER-AGENT-V2
+# (main branch), reinstalls the Python package + systemd units, preserves
 # operator state (config, tokens, repair policy, audit logs, pending repairs,
 # heartbeat), and restarts the services.
 #
@@ -22,8 +22,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-REPO_URL="https://github.com/dizeldz20-ux/ipracticom-sweeper-private.git"
-REPO_BRANCH="${SWEEPER_BRANCH:-master}"
+REPO_URL="${SWEEPER_REPO_URL:-https://github.com/dizeldz20-ux/SWEEPER-AGENT-V2.git}"
+REPO_BRANCH="${SWEEPER_BRANCH:-main}"
 CONFIG_DIR="/etc/ipracticom-sweeper"
 STATE_DIR="/var/lib/ipracticom-sweeper"
 BACKUP_DIR="${STATE_DIR}/.update_backup"

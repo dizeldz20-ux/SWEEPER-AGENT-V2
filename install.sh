@@ -2,8 +2,8 @@
 # iPracticom Sweeper — install.sh — the ONE-LINER installer.
 #
 # Usage:
-#   curl -sSL https://raw.githubusercontent.com/dizeldz20-ux/ipracticom-sweeper-private/master/install.sh | sudo bash
-#   sudo SWEEPER_BRANCH=v0.6.3 bash install.sh     # pin to a tag/branch
+#   curl -sSL https://raw.githubusercontent.com/dizeldz20-ux/SWEEPER-AGENT-V2/main/install.sh | sudo bash
+#   sudo SWEEPER_BRANCH=<tag> bash install.sh      # pin to a tag/branch
 #   sudo bash install.sh --uninstall               # remove
 #
 # What it does (all in one shot, idempotent):
@@ -22,11 +22,10 @@
 
 set -euo pipefail
 
-REPO_URL="https://github.com/dizeldz20-ux/ipracticom-sweeper-private.git"
-# Default to the repo's live branch. The old default (v1.0.0) pinned a fresh
-# install to an ancient tag; there is no v1.5.x tag, so `master` is the current
-# release line. Override with SWEEPER_BRANCH=<tag> to pin.
-BRANCH="${SWEEPER_BRANCH:-master}"
+# The public release repo — a curated snapshot of the private working repo.
+# Installing from it needs no GitHub credentials on the target machine.
+REPO_URL="${SWEEPER_REPO_URL:-https://github.com/dizeldz20-ux/SWEEPER-AGENT-V2.git}"
+BRANCH="${SWEEPER_BRANCH:-main}"
 INSTALL_DIR="${SWEEPER_INSTALL_DIR:-/opt/ipracticom-sweeper}"
 SERVICE_NAME="ipracticom-sweeper"
 STATE_DIR="/var/lib/${SERVICE_NAME}"

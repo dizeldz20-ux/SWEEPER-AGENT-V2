@@ -1,6 +1,6 @@
 [Unit]
 Description=iPracticom AWS Linux Sweeper - periodic health check
-Documentation=https://github.com/dizeldz20-ux/ipracticom-sweeper-private
+Documentation=https://github.com/dizeldz20-ux/SWEEPER-AGENT-V2
 After=network-online.target
 Wants=network-online.target
 
