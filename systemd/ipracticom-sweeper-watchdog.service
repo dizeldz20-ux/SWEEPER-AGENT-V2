@@ -1,0 +1,14 @@
+[Unit]
+Description=iPracticom Sweeper watchdog
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Load SLACK_WEBHOOK_URL / TELEGRAM_* so the restart-storm alert can actually
+# be delivered. Leading '-' = optional (file may not exist yet).
+EnvironmentFile=-/etc/ipracticom-sweeper/agent.env
+ExecStart=/usr/local/bin/ipracticom-sweeper-watchdog.sh
+Nice=10
+PrivateTmp=true
+NoNewPrivileges=true

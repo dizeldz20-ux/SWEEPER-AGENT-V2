@@ -1,0 +1,310 @@
+{% extends "base_spa.html" %}
+
+{% block title %}צ'אט — iPracticom Sweeper{% endblock %}
+
+{% block content %}
+<section class="chat-shell">
+  <header class="chat-header">
+    <h1>צ'אט עם הסוויפר</h1>
+    <p class="muted">session storage in-memory; LLM integration יגיע בסלייס 3.3</p>
+  </header>
+
+  <div class="chat-grid">
+    <aside class="chat-sessions" aria-label="sessions">
+      <h2>שיחות</h2>
+      <ul id="chat-sessions">
+        {% for s in sessions %}
+        <li data-session-id="{{ s.session_id }}">
+          <strong>{{ s.title }}</strong>
+          <span class="msg-count">{{ s.message_count }} הודעות</span>
+        </li>
+        {% endfor %}
+      </ul>
+      <button id="new-session" type="button">+ שיחה חדשה</button>
+    </aside>
+
+    <main class="chat-main">
+      <div id="chat-log" class="chat-log" aria-live="polite">
+        <p class="muted">בחר שיחה מהרשימה או התחל חדשה.</p>
+      </div>
+      <form id="chat-form" class="chat-form">
+        <input id="chat-input" type="text" placeholder="כתוב הודעה…" autocomplete="off" required>
+        <button type="submit">שלח</button>
+      </form>
+    </main>
+  </div>
+
+  <script nonce="{{ csp_nonce() if csp_nonce else '' }}">
+    (function() {
+      const log = document.getElementById('chat-log');
+      const form = document.getElementById('chat-form');
+      const input = document.getElementById('chat-input');
+      const newBtn = document.getElementById('new-session');
+      let currentSid = null;
+      let ws = null;
+
+      function appendMsg(role, content, extraBlocks) {
+        const p = document.createElement('p');
+        p.className = 'chat-msg role-' + role;
+        p.textContent = (role === 'user' ? '\u05d0\u05ea\u05d4: ' : role === 'assistant' ? '\u05e1\u05d5\u05db\u05df: ' : '') + content;
+        if (extraBlocks && extraBlocks.length) {
+          for (const blk of extraBlocks) {
+            const div = document.createElement('div');
+            div.className = blk.cls || 'tool-block';
+            div.textContent = blk.text;
+            p.appendChild(div);
+          }
+        }
+        log.appendChild(p);
+        log.scrollTop = log.scrollHeight;
+      }
+
+      function connect() {
+        const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+        ws = new WebSocket(proto + '//' + location.host + '/ws');
+        ws.onmessage = (ev) => {
+          try {
+            const data = JSON.parse(ev.data);
+            const blocks = [];
+            if (Array.isArray(data.tool_calls) && data.tool_calls.length) {
+              const lines = ['[tools] ' + (data.llm_mode || 'mock')];
+              for (const tc of data.tool_calls) {
+                const args = tc.arguments || {};
+                const argsStr = Object.keys(args).map(k => k + '=' + JSON.stringify(args[k])).join(', ');
+                lines.push('\u2022 ' + (tc.name || '?') + '(' + argsStr + ')');
+              }
+              blocks.push({ cls: 'tool-block', text: lines.join('\n') });
+            }
+            if (Array.isArray(data.rag_hits) && data.rag_hits.length) {
+              const rlines = ['[RAG] top hits'];
+              for (const h of data.rag_hits) {
+                const snippet = (h.text || '').trim().replace(/\s+/g, ' ').slice(0, 160);
+                rlines.push('\u2022 ' + h.doc_id + ' (score ' + (h.score || 0).toFixed(2) + '): ' + snippet);
+              }
+              blocks.push({ cls: 'rag-block', text: rlines.join('\n') });
+            }
+            if (data.user) appendMsg('user', data.user.content);
+            if (data.assistant) appendMsg('assistant', data.assistant.content, blocks);
+            if (data.error) appendMsg('system', '\u05e9\u05d2\u05d9\u05d0\u05d4: ' + data.error);
+          } catch (e) { appendMsg('system', '\u05ea\u05d2\u05d5\u05d1\u05d4 \u05dc\u05d0 \u05ea\u05e7\u05d9\u05e0\u05d4'); }
+        };
+        ws.onclose = () => setTimeout(connect, 1500);
+        ws.onerror = () => { try { ws.close(); } catch (e) {} };
+      }
+
+      function setSession(sid, title) {
+        currentSid = sid;
+        log.innerHTML = '';
+        if (title) appendMsg('system', 'שיחה: ' + title);
+      }
+
+      document.querySelectorAll('#chat-sessions li').forEach(li => {
+        li.addEventListener('click', () => {
+          setSession(li.dataset.sessionId, li.querySelector('strong').textContent);
+        });
+      });
+
+      newBtn.addEventListener('click', async () => {
+        const title = prompt('כותרת לשיחה חדשה?', 'חדש') || 'חדש';
+        const r = await fetch('/chat/sessions', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title})});
+        const data = await r.json();
+        const li = document.createElement('li');
+        li.dataset.sessionId = data.session_id;
+        li.innerHTML = '<strong>' + data.title + '</strong><span class="msg-count">' + data.message_count + ' הודעות</span>';
+        li.addEventListener('click', () => setSession(data.session_id, data.title));
+        document.getElementById('chat-sessions').prepend(li);
+        setSession(data.session_id, data.title);
+      });
+
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const content = input.value.trim();
+        if (!content) return;
+        if (!ws || ws.readyState !== 1) {
+          appendMsg('system', 'מתחבר…');
+          return;
+        }
+        ws.send(JSON.stringify({session_id: currentSid, content}));
+        input.value = '';
+      });
+
+      connect();
+    })();
+  </script>
+</section>
+
+<style>
+/* Slice 7: chat shell — proper layout, RTL alignment, distinct bubbles.
+   The previous version had no inline CSS at all and relied on inherited
+   styles, which caused text to stick to the right edge with no separation. */
+.chat-shell {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+.chat-header { margin-bottom: 20px; }
+.chat-header h1 { font-size: 1.6rem; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; }
+.chat-header .muted { color: #94a3b8; font-size: 0.875rem; }
+
+.chat-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 20px;
+  min-height: 540px;
+}
+
+.chat-sessions {
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chat-sessions h2 {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 4px;
+}
+.chat-sessions ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; }
+.chat-sessions li {
+  padding: 10px 12px;
+  background: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  transition: background 120ms ease, border-color 120ms ease;
+}
+.chat-sessions li:hover { background: #334155; border-color: #475569; }
+.chat-sessions li strong { color: #e2e8f0; font-size: 0.875rem; font-weight: 600; }
+.chat-sessions li .msg-count { color: #64748b; font-size: 0.75rem; }
+.chat-sessions button {
+  background: #4f46e5;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  margin-top: 8px;
+}
+.chat-sessions button:hover { background: #4338ca; }
+
+.chat-main {
+  display: flex;
+  flex-direction: column;
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  overflow: hidden;
+  min-height: 540px;
+}
+
+.chat-log {
+  flex: 1;
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: linear-gradient(180deg, #020617 0%, #0f172a 100%);
+}
+.chat-log .muted { color: #64748b; font-size: 0.875rem; text-align: center; margin: auto; }
+
+.chat-msg {
+  margin: 0;
+  padding: 12px 16px;
+  border-radius: 12px;
+  max-width: 75%;
+  font-size: 0.9375rem;
+  line-height: 1.55;
+  word-break: break-word;
+  white-space: pre-wrap;
+}
+/* In RTL: assistant/system stay on the right (default), user goes to the left.
+   `margin-inline-start: auto` pushes the bubble to the inline-start edge
+   regardless of writing direction. */
+.chat-msg.role-user {
+  background: #4f46e5;
+  color: white;
+  margin-inline-start: auto;
+  border-bottom-right-radius: 4px;
+}
+.chat-msg.role-assistant {
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  margin-inline-end: auto;
+  border-bottom-left-radius: 4px;
+}
+.chat-msg.role-system {
+  background: transparent;
+  color: #94a3b8;
+  font-size: 0.8125rem;
+  font-style: italic;
+  text-align: center;
+  margin: 4px auto;
+  max-width: 100%;
+  padding: 4px 0;
+}
+
+.tool-block, .rag-block {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 6px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  white-space: pre-wrap;
+  border-inline-start: 2px solid #6366f1;
+}
+.rag-block { border-inline-start-color: #34d399; }
+
+.chat-form {
+  display: flex;
+  gap: 10px;
+  padding: 14px 18px;
+  background: #0f172a;
+  border-top: 1px solid #334155;
+}
+.chat-form input {
+  flex: 1;
+  background: #1e293b;
+  color: #e2e8f0;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 0.9375rem;
+  font-family: inherit;
+  min-width: 0;
+}
+.chat-form input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15); }
+.chat-form button {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 0 22px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  cursor: pointer;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+.chat-form button:hover { background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%); }
+
+@media (max-width: 760px) {
+  .chat-grid { grid-template-columns: 1fr; }
+  .chat-sessions { max-height: 160px; }
+}
+</style>
+{% endblock %}

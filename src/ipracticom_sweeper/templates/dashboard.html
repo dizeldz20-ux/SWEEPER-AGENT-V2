@@ -1,0 +1,185 @@
+{% extends "base_spa.html" %}
+{% block title %}לוח בקרה — סוויפר iPracticom{% endblock %}
+{% block content %}
+
+{% if result %}
+  {% set defcon = result.defcon %}
+  {% set defcon_label = result.defcon_label %}
+  {% set diagnosis = result.diagnosis %}
+
+  {% if is_remote %}
+    <div class="remote-banner">
+      ◉ מחובר לסוכן מרוחק: {{ identity.base_url }}
+    </div>
+  {% endif %}
+
+  <!-- באנר DEFCON -->
+  <div class="defcon-banner {{ defcon_label }}">
+    <div class="defcon-badge">רמה {{ defcon }}</div>
+    <div class="defcon-info">
+      <h1 class="defcon-label">{{ defcon_label | defcon_label_hebrew }}</h1>
+      <div class="defcon-summary">{{ diagnosis.summary }}</div>
+    </div>
+  </div>
+
+  <!-- סטטוס heartbeat + הפעלה ידנית -->
+  <div class="agent-status">
+    <div class="agent-status-info">
+      {% if heartbeat %}
+        {% set hb_state = heartbeat.state %}
+        <span class="hb-dot {{ hb_state }}"></span>
+        <span class="hb-label">
+          {% if hb_state == 'fresh' %}סוכן פעיל
+          {% elif hb_state == 'stale' %}סוכן לא מעודכן
+          {% elif hb_state == 'missing' %}סוכן מעולם לא רץ
+          {% else %}סטטוס לא תקין{% endif %}
+        </span>
+        {% if heartbeat.age_seconds is not none %}
+          <span class="hb-meta">
+            ריצה אחרונה לפני
+            {% if heartbeat.age_seconds < 60 %}{{ heartbeat.age_seconds | int }} שניות
+            {% elif heartbeat.age_seconds < 3600 %}{{ (heartbeat.age_seconds / 60) | round(1) }} דקות
+            {% else %}{{ (heartbeat.age_seconds / 3600) | round(1) }} שעות
+            {% endif %}
+          </span>
+        {% endif %}
+        {% if heartbeat.last_defcon %}
+          <span class="hb-meta">DEFCON {{ heartbeat.last_defcon }}</span>
+        {% endif %}
+      {% else %}
+        <span class="hb-dot missing"></span>
+        <span class="hb-label">heartbeat לא נקרא</span>
+      {% endif %}
+    </div>
+    <form method="POST" action="{{ url_for('run_now') }}" class="run-form">
+      <button type="submit" class="btn-primary">▶ הפעל בדיקה עכשיו</button>
+    </form>
+  </div>
+
+  <!-- מדדים -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">מצב ניטור</div>
+      <div class="metric-value {{ defcon_label if defcon >= 4 else 'green' }}">{{ result.monitor_overall }}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">בעיות</div>
+      <div class="metric-value {{ 'red' if result.problems_found > 0 else 'green' }}">{{ result.problems_found }}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">תיקונים הצליחו</div>
+      <div class="metric-value green">{{ result.repairs_succeeded }}/{{ result.repairs_attempted }}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">דורשים אישור</div>
+      <div class="metric-value {{ 'red' if (result.needs_human or 0) > 0 else 'green' }}">{{ result.needs_human or 0 }}</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">משך ריצה</div>
+      <div class="metric-value">{{ ((result.duration_ms or 0) / 1000) | round(1) }}ש'</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">ריצה אחרונה</div>
+      <div class="metric-value" style="font-size: 16px;">{{ (result.finished_at or '—').split('T')[1][:8] if 'T' in (result.finished_at or '') else (result.finished_at or '—') }}</div>
+    </div>
+  </div>
+
+  <div class="dashboard-grid">
+    <div>
+      <!-- מודולים -->
+      <div class="section">
+        <h2 class="section-title">מודולים
+          {% if diagnosis.modules %}<span class="count">{{ diagnosis.modules|length }} מקורות</span>{% endif %}
+        </h2>
+        <div class="module-grid">
+          {% for mod, data in (diagnosis.modules or {}).items() %}
+            <div class="module">
+              <span class="module-name">{{ mod }}</span>
+              <span class="module-status {{ data.status }}">{{ data.status | module_status_hebrew }}</span>
+            </div>
+          {% else %}
+            <div class="empty-state">אין נתוני מודולים מהריצה האחרונה.</div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- בעיות -->
+      {% if diagnosis.problems %}
+        <div class="section">
+          <h2 class="section-title">בעיות שזוהו
+            <span class="count">{{ diagnosis.problems|length }} אותרו</span>
+          </h2>
+          {% for p in diagnosis.problems %}
+            <div class="problem">
+              <div class="problem-header">
+                <span class="problem-severity {{ p.severity }}">{{ p.severity | severity_hebrew }}</span>
+                <span class="problem-kind">{{ p.kind }}</span>
+              </div>
+              <div class="problem-detail">{{ p.detail }}</div>
+              {% if p.metrics %}
+                <div class="problem-metrics">{{ p.metrics }}</div>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      <!-- תיקונים -->
+      {% if result.repair_results %}
+        <div class="section">
+          <h2 class="section-title">תיקונים שבוצעו
+            <span class="count">{{ result.repair_results|length }} פעולות</span>
+          </h2>
+          {% for r in result.repair_results %}
+            <div class="repair">
+              {% if r.get('dry_run') %}
+                <span class="repair-mark dry-run">○</span>
+              {% elif r.success %}
+                <span class="repair-mark success">✓</span>
+              {% else %}
+                <span class="repair-mark failure">✗</span>
+              {% endif %}
+              <span class="repair-action">{{ r.action }}({{ r.target }})</span>
+              <span class="repair-message">{{ r.message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+    </div>
+
+    <aside>
+      <!-- סיכום כללים -->
+      <div class="rules">
+        <h3 class="rules-title">ספי התראה פעילים</h3>
+        {% if rules_summary.get('_remote') %}
+          <div class="remote-banner">
+            הכללים נטענים בסוכן המרוחק ({{ identity.base_url }}).<br>
+            צפה ב-<code>/etc/ipracticom-sweeper/rules.yaml</code> בשרת.
+          </div>
+        {% else %}
+          {% for module, thresholds in rules_summary.items() %}
+            <div class="rule-module">{{ module }}</div>
+            {% for k, v in thresholds.items() %}
+              <div class="rule-row">
+                <span class="rule-key">{{ k }}</span>
+                <span class="rule-val">{{ v }}</span>
+              </div>
+            {% endfor %}
+          {% endfor %}
+        {% endif %}
+      </div>
+    </aside>
+  </div>
+
+{% else %}
+  <div class="empty-state">
+    <div class="empty-state-title">עדיין אין תוצאות סריקה</div>
+    <p>הרץ <code>python -m ipracticom_sweeper.sweeper</code> כדי לאכלס את לוח הבקרה.</p>
+    <p style="margin-top: 16px;">
+      <a href="{{ url_for('run_now') }}" style="color: var(--accent);">▶ הפעל בדיקה עכשיו</a>
+    </p>
+  </div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,67 @@
+{
+  "title": "iPracticom Sweeper — Security",
+  "uid": "ipracticom-security",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["ipracticom", "sweeper", "security"],
+  "description": "Security posture: failed logins, port drift, SUID changes, audit log integrity.",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Failed Logins (5min)",
+      "description": "1=ok (below threshold), 2=warn, 3=crit.",
+      "targets": [
+        {"expr": "sweeper_check_status{check=\"sec_failed_logins\"}", "legendFormat": "Failed Logins"}
+      ],
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4}
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Open Ports Drift",
+      "description": "1=stable, 2=new port, 3=critical port exposed.",
+      "targets": [
+        {"expr": "sweeper_check_status{check=\"sec_port_drift\"}", "legendFormat": "Ports"}
+      ],
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4}
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "SUID Changes",
+      "description": "1=stable, 2=new SUID, 3=root SUID added.",
+      "targets": [
+        {"expr": "sweeper_check_status{check=\"sec_suid_changes\"}", "legendFormat": "SUID"}
+      ],
+      "gridPos": {"x": 12, "y": 0, "w": 6, "h": 4}
+    },
+    {
+      "id": 4,
+      "type": "graph",
+      "title": "Audit Log Size (bytes)",
+      "description": "Tracks audit.jsonl growth over time (via rep_/rot_ proxy).",
+      "targets": [
+        {
+          "expr": "sweeper_check_status{check=\"self_audit_size\"}",
+          "legendFormat": "audit"
+        }
+      ],
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 6}
+    },
+    {
+      "id": 5,
+      "type": "graph",
+      "title": "Telegram Token Health",
+      "description": "1=valid, 0=invalid/revoked.",
+      "targets": [
+        {
+          "expr": "sweeper_check_status{check=\"self_bot_token\"}",
+          "legendFormat": "bot"
+        }
+      ],
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 6}
+    }
+  ]
+}

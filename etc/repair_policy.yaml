@@ -1,0 +1,24 @@
+# iPracticom Sweeper — Repair Policy
+# v0.4.6: default = 'needs_approval' — every repair waits for operator
+# approval via the ✅ Approvals menu in the bot.
+#
+# Per Daniel 2026-06-30: "בשלב זה צריך רק להתריע ולבקש אישור לפני התיקון"
+# (only alert + ask for approval before any fix).
+#
+# 21 collectors under monitor/ feed into the pipeline (cpu, memory, disk,
+# network, services, ssl, http, kernel_errors, security_baseline, smart,
+# processes, fd, aws, uptime, fd_check, aide_check, iostat, ...). Each
+# collector can propose any of the 5 registered repairs:
+#   drop_caches, log_truncate_journald, service_restart,
+#   top_processes_snapshot, notify_human
+#
+# Every repair requires explicit operator approval before execution.
+# Per-repair overrides below — all commented out so the default wins.
+
+default: needs_approval
+repairs:
+  # drop_caches: auto  # ← uncomment to whitelist page cache drops
+  # log_truncate_journald: auto  # ← uncomment to whitelist journald vacuum
+  # top_processes_snapshot: auto  # ← read-only diagnostic, safe to whitelist
+  # notify_human: auto  # ← sends alert to Slack/Telegram (safe)
+  # service_restart: needs_approval  # ← always approval (could cause downtime)

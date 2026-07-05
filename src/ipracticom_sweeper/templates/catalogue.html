@@ -1,0 +1,101 @@
+{% extends "base_spa.html" %}
+{% block title %}קטלוג בדיקות — סוויפר iPracticom{% endblock %}
+{% block content %}
+
+<section class="catalogue-page">
+  <header class="page-header">
+    <h1 class="page-title">קטלוג בדיקות</h1>
+    {% if mode == 'index' %}
+      <p class="page-sub">כל הבדיקות שהסוכן מסוגל לבצע, עם ספירת פרמטרים מ-`rules.yaml`.</p>
+    {% else %}
+      <p class="page-sub">
+        <a href="{{ url_for('catalogue_view') }}">← חזרה לקטלוג</a>
+      </p>
+    {% endif %}
+  </header>
+
+  {% if mode == 'index' %}
+    {% if checks %}
+      <table class="catalogue-table">
+        <thead>
+          <tr>
+            <th>בדיקה</th>
+            <th>תיאור</th>
+            <th>פרמטרים (מוגדרים / ידועים)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in checks %}
+            <tr>
+              <td class="catalogue-key">
+                <code>{{ c.key }}</code>
+                <div class="catalogue-label">{{ c.label_he }}</div>
+              </td>
+              <td class="catalogue-desc">{{ c.description_he }}</td>
+              <td class="catalogue-params">
+                <span class="params-count">{{ c.current_param_count }} / {{ c.param_count }}</span>
+              </td>
+              <td>
+                <a class="btn-link" href="{{ url_for('catalogue_module', module_key=c.key) }}">פתח</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <p class="empty-state">הקטלוג ריק.</p>
+    {% endif %}
+
+  {% else %}
+    <article class="catalogue-module">
+      <h2><code>{{ entry.key }}</code> — {{ entry.label_he }}</h2>
+      <p class="catalogue-desc">{{ entry.description_he }}</p>
+
+      <h3>פרמטרים מוגדרים</h3>
+      {% if params %}
+        <table class="params-table">
+          <thead>
+            <tr>
+              <th>שם</th>
+              <th>סוג</th>
+              <th>ערך נוכחי</th>
+              <th>תיאור</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in params %}
+              <tr>
+                <td><code>{{ p.name }}</code></td>
+                <td><span class="type-pill">{{ p.type }}</span></td>
+                <td class="param-value">
+                  {% if p.current_value is none %}
+                    <span class="param-missing">לא מוגדר</span>
+                  {% else %}
+                    <code class="param-current">{{ p.current_value }}</code>
+                  {% endif %}
+                </td>
+                <td>{{ p.description_he }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="empty-state">לבדיקה הזו אין פרמטרים הניתנים לקביעה.</p>
+      {% endif %}
+
+      {% if all_current %}
+        <details class="raw-current">
+          <summary>כל הערכים הגולמיים מ-<code>{{ module_key }}</code> ב-rules.yaml</summary>
+          <pre>{{ all_current | tojson(indent=2) }}</pre>
+        </details>
+      {% endif %}
+
+      <p class="read-only-note">
+        ⚠ תצוגה בלבד — שינוי ערכים דורש תהליך אישור נפרד (עתידי).
+      </p>
+    </article>
+  {% endif %}
+</section>
+
+{% endblock %}

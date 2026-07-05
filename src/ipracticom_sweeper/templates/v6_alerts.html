@@ -1,0 +1,95 @@
+{% extends "v6_layout.html" %}
+{% block title %}התראות — סוויפר iPracticom (v6){% endblock %}
+
+{% block v6_content %}
+<div class="v6-page-header">
+  <h1 class="v6-h1">
+    התראות
+    <span id="v6-crit-count" class="v6-pill v6-pill-rose">0</span>
+  </h1>
+  <p class="v6-sub">עדכון אוטומטי כל 5 שניות · הקריטיות מסומנות באדום.</p>
+</div>
+
+<nav class="v6-tabs" aria-label="סינון לפי קטגוריה">
+  <a href="?tab=all" class="v6-tab {{ 'active' if tab == 'all' }}">הכל</a>
+  <a href="?tab=network" class="v6-tab {{ 'active' if tab == 'network' }}">רשת</a>
+  <a href="?tab=performance" class="v6-tab {{ 'active' if tab == 'performance' }}">ביצועים</a>
+  <a href="?tab=security" class="v6-tab {{ 'active' if tab == 'security' }}">אבטחה</a>
+  <a href="?tab=system" class="v6-tab {{ 'active' if tab == 'system' }}">מערכת</a>
+</nav>
+
+<div class="v6-surface-elevated v6-section">
+  <div id="v6-alerts-list">
+    <p class="v6-mute">טוען...</p>
+  </div>
+  <p id="v6-alerts-empty" class="v6-mute" hidden>אין התראות פעילות.</p>
+</div>
+
+<p class="v6-mute v6-small v6-section">
+  snooze / mark-resolved נכתבות לתור האישורים ב-<code>/approvals</code>.
+  הסוכן לא ישנה state התראה בלי אישור ידני.
+</p>
+
+<script>
+(function () {
+  var tab = {{ (request.args.get('tab') or 'all')|tojson }};
+  var listEl = document.getElementById('v6-alerts-list');
+  var emptyEl = document.getElementById('v6-alerts-empty');
+  var critEl = document.getElementById('v6-crit-count');
+  var lastCritCount = 0;
+
+  function esc(s) {
+    return (s == null ? '' : String(s)).replace(/[&<>"']/g, function (c) {
+      return ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;" })[c];
+    });
+  }
+
+  function render(alerts) {
+    if (!alerts.length) {
+      listEl.innerHTML = '';
+      emptyEl.hidden = false;
+      return;
+    }
+    emptyEl.hidden = true;
+    listEl.innerHTML = alerts.map(function (a, i) {
+      var id = a.ts + ':' + a.module;
+      var pillCls = a.status === 'crit' || a.status === 'red' || a.status === 'orange'
+        ? 'v6-pill-rose' : 'v6-pill-amber';
+      return ''
+        + '<div class="v6-alert-row" data-status="' + esc(a.status) + '" data-tab="' + esc(a.tab) + '">'
+        +   '<span class="v6-pill ' + pillCls + '">' + esc(a.status) + '</span>'
+        +   '<span class="v6-mono">' + esc(a.module) + '</span>'
+        +   '<span class="v6-mute v6-small" dir="ltr">' + esc(a.ts) + '</span>'
+        +   '<span class="v6-actions-inline">'
+        +     '<form method="POST" action="/v6/alerts/' + encodeURIComponent(id) + '/snooze" class="v6-inline-form">'
+        +       '<button type="submit" name="duration_min" value="15" title="Snooze 15 דקות — אישור">15m</button>'
+        +       '<button type="submit" name="duration_min" value="60" title="Snooze שעה — אישור">1h</button>'
+        +       '<button type="submit" name="duration_min" value="1440" title="Snooze יום — אישור">24h</button>'
+        +     '</form>'
+        +     '<form method="POST" action="/v6/alerts/' + encodeURIComponent(id) + '/resolve" class="v6-inline-form">'
+        +       '<button type="submit" class="v6-danger" title="Mark resolved — אישור">סמן כפתור</button>'
+        +     '</form>'
+        +   '</span>'
+        + '</div>';
+    }).join('');
+  }
+
+  function tick() {
+    fetch('/v6/alerts?tab=' + encodeURIComponent(tab), { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j) return;
+        render(j.alerts || []);
+        var c = j.crit_count || 0;
+        if (c > lastCritCount) critEl.classList.add('v6-pulse-fast');
+        else critEl.classList.remove('v6-pulse-fast');
+        lastCritCount = c;
+        critEl.textContent = String(c);
+      })
+      .catch(function () { /* network blip — keep last render */ });
+  }
+  tick();
+  setInterval(tick, 5000);
+})();
+</script>
+{% endblock %}

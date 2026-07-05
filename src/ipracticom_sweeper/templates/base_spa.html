@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}iPracticom Sweeper{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+  /* --- Sidebar (slice 3: top-nav removed; sidebar widened 256→288 to carry 9 items) - */
+  .spa-shell { display: flex; min-height: 100vh; }
+  .spa-sidebar {
+    width: 288px; background: #0f172a; border-left: 1px solid #1e293b;
+    padding: 24px 20px; display: flex; flex-direction: column; gap: 28px;
+  }
+  .spa-brand { display: flex; align-items: center; gap: 12px; }
+  .spa-brand-mark {
+    width: 32px; height: 32px; background: #4f46e5; border-radius: 8px;
+    display: grid; place-items: center;
+  }
+  .spa-brand-mark svg { width: 20px; height: 20px; color: white; }
+  .spa-brand-name { font-size: 1.125rem; font-weight: 700; color: white; letter-spacing: -0.01em; }
+
+  .spa-nav { display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .spa-nav button, .spa-nav a {
+    display: flex; align-items: center; gap: 12px; padding: 12px 16px;
+    border-radius: 12px; font-size: 0.875rem; font-weight: 500; text-align: right;
+    color: #94a3b8; background: transparent; border: 1px solid transparent;
+    width: 100%; cursor: pointer; text-decoration: none;
+  }
+  .spa-nav button:hover, .spa-nav a:hover { background: #1e293b; color: #e2e8f0; }
+  .spa-nav a.is-active {
+    background: rgba(79, 70, 229, 0.10); color: #818cf8;
+    border-color: rgba(79, 70, 229, 0.20);
+  }
+  .spa-nav svg { width: 20px; height: 20px; opacity: 0.8; }
+
+  .spa-sidebar-foot {
+    margin-top: auto; padding: 14px; background: rgba(30, 41, 59, 0.5);
+    border: 1px solid #334155; border-radius: 14px; font-size: 0.75rem;
+  }
+  .spa-sidebar-foot .row { display: flex; align-items: center; justify-content: space-between; }
+  .spa-sidebar-foot .label { color: #64748b; }
+  .spa-sidebar-foot .val { color: #cbd5e1; margin-top: 6px; }
+  .spa-sidebar-foot .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: #f59e0b; box-shadow: 0 0 8px rgba(245, 158, 11, 0.6);
+  }
+
+  /* --- Main ------------------------------------------------------------- */
+  .spa-main { flex: 1; padding: 32px; overflow-y: auto; }
+
+  /* --- Generic page chrome (used by legacy templates) ------------------- */
+  .spa-page-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 24px; }
+  .spa-page-title { font-size: 1.5rem; font-weight: 700; color: white; }
+  .spa-page-sub { color: #94a3b8; margin-top: 4px; font-size: 0.875rem; }
+
+  /* The legacy templates define their own `.page-header`, `.page-title`,
+     `.page-sub`, table classes, etc. The colors here just give them a
+     dark-mode home if they aren't already styled. */
+  body { background: #020617; color: #e2e8f0; }
+  main { color: #e2e8f0; }
+  .container { max-width: none; padding: 0; }
+  .site-footer { display: none; }
+  a { color: #818cf8; }
+  table { color: #e2e8f0; }
+  th { color: #cbd5e1; }
+  td, th { border-color: #1e293b; }
+  pre, code { background: #0f172a; color: #e2e8f0; border: 1px solid #1e293b; border-radius: 6px; }
+  input, select, textarea {
+    background: #0f172a; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px;
+    padding: 8px 12px;
+  }
+  button, .btn { background: #4f46e5; color: white; border-radius: 8px; padding: 8px 16px; font-weight: 500; }
+  button:hover, .btn:hover { background: #4338ca; }
+
+  /* --- Slice 4: override layer so legacy chrome looks at home in the dark shell.
+     The CSS variables in style.css use light defaults; we re-bind them
+     to dark slate-900 cards + indigo/emerald accents.  All selectors
+     are gated under `.spa-main` so they never leak to legacy pages
+     served outside the SPA shell. -------------------------------------- */
+  .spa-main {
+    /* Surface tokens (re-bind of var(--surface) etc. for the SPA shell) */
+    --surface: #0f172a;
+    --surface-2: #1e293b;
+    --border: #1e293b;
+    --border-soft: #334155;
+    --text: #e2e8f0;
+    --text-mute: #94a3b8;
+    --accent: #34d399;       /* emerald-400 */
+    --accent-soft: rgba(52, 211, 153, 0.10);
+    --warning: #fbbf24;
+    --warning-soft: rgba(251, 191, 36, 0.12);
+    --danger: #f87171;
+    --danger-soft: rgba(248, 113, 113, 0.12);
+  }
+  .spa-main .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 22px;
+    margin-bottom: 18px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.02) inset;
+  }
+  .spa-main .section-title {
+    font-size: 1.05rem; font-weight: 700; margin: 0 0 14px;
+    padding-bottom: 12px; border-bottom: 1px solid var(--border-soft);
+    color: white; display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  }
+  .spa-main .section-title .count {
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+    color: var(--text-mute); font-weight: 400;
+  }
+  .spa-main table { width: 100%; border-collapse: collapse; }
+  .spa-main th, .spa-main td {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    text-align: right; vertical-align: middle;
+  }
+  .spa-main th { color: #cbd5e1; font-weight: 600; font-size: 0.8125rem; }
+  .spa-main td { color: #e2e8f0; font-size: 0.875rem; }
+  .spa-main .catalogue-table td:first-child { font-weight: 600; color: white; }
+  .spa-main .catalogue-table tr:hover td { background: var(--surface-2); }
+  .spa-main .history-row {
+    display: grid; grid-template-columns: 200px 1fr 100px 120px;
+    gap: 14px; padding: 12px 16px; border-radius: 10px;
+    border: 1px solid transparent; align-items: center;
+  }
+  .spa-main .history-row:hover {
+    background: var(--surface-2); border-color: var(--border-soft);
+  }
+  .spa-main .history-row.history-head {
+    background: transparent; color: var(--text-mute); font-size: 0.75rem;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .spa-main .fleet-row {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px; padding: 12px 16px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--surface);
+  }
+  .spa-main .fleet-row:hover { border-color: var(--border-soft); }
+  .spa-main .settings-form { display: flex; flex-direction: column; gap: 14px; }
+  .spa-main .settings-form label {
+    color: var(--text-mute); font-size: 0.8125rem; font-weight: 500;
+  }
+  .spa-main .settings-form input[type="url"],
+  .spa-main .settings-form input[type="text"],
+  .spa-main .settings-form input[type="number"],
+  .spa-main .settings-form select,
+  .spa-main .settings-form textarea {
+    width: 100%; padding: 10px 14px; background: var(--surface-2);
+    border: 1px solid var(--border-soft); border-radius: 8px;
+    color: var(--text); font-family: inherit; font-size: 0.875rem;
+  }
+  .spa-main .settings-form input:focus,
+  .spa-main .settings-form select:focus,
+  .spa-main .settings-form textarea:focus {
+    outline: none; border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.20);
+  }
+  /* Status badges → emerald/amber/red, consistent with sidebar active accent */
+  .spa-main .badge { display: inline-block; padding: 3px 9px; border-radius: 999px;
+    font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; font-weight: 700;
+    text-transform: lowercase; }
+  .spa-main .badge.ok    { color: var(--accent);  background: var(--accent-soft); }
+  .spa-main .badge.warn  { color: var(--warning); background: var(--warning-soft); }
+  .spa-main .badge.crit  { color: var(--danger);  background: var(--danger-soft); }
+</style>
+</head>
+<body class="bg-slate-950 text-slate-200 min-h-screen" data-shell="spa">
+
+{# --- Shell: sidebar + main (sidebar carries all 9 nav items; top-nav removed in slice 3) --#}
+<div class="spa-shell">
+
+  <aside class="spa-sidebar">
+    <div class="spa-brand">
+      <div class="spa-brand-mark">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      </div>
+      <span class="spa-brand-name">Sweeper</span>
+    </div>
+
+    <nav class="spa-nav">
+      <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}is-active{% endif %}">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5h16M4 12h16M4 19h16"/></svg>
+        <span>לוח בקרה</span>
+      </a>
+      <a href="{{ url_for('history') }}" class="{% if request.endpoint == 'history' %}is-active{% endif %}">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>היסטוריית אירועים</span>
+      </a>
+      <a href="{{ url_for('approvals_view') }}" class="{% if request.endpoint and request.endpoint.startswith('approval') %}is-active{% endif %}">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <span>אישורים</span>
+      </a>
+      <a href="{{ url_for('settings') }}" class="{% if request.endpoint and request.endpoint.startswith('settings') %}is-active{% endif %}">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572-1.065c-.426-1.756-2.924-1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        <span>הגדרות</span>
+      </a>
+      {# --- slice 3: 5 entries migrated from removed spa-topnav -------------- #}
+      <a href="{{ url_for('settings_connectors') }}" class="{% if request.endpoint == 'settings_connectors' %}is-active{% endif %}">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 015.656 0l1.415 1.415a4 4 0 010 5.656l-3 3a4 4 0 01-5.656 0M10.172 13.828a4 4 0 01-5.656 0l-1.415-1.415a4 4 0 010-5.656l3-3a4 4 0 015.656 0"/></svg>
+        <span>מחברים</span>
+      </a>
+      <a href="{{ url_for('fleet_view') }}" class="{% if request.endpoint and request.endpoint.startswith('fleet') %}is-active{% endif %}">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"/></svg>
+        <span>צי</span>
+      </a>
+      <a href="{{ url_for('inspector_view') }}" class="{% if request.endpoint and request.endpoint.startswith('inspector') %}is-active{% endif %}">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <span>מפקח בדיקות</span>
+      </a>
+      <a href="{{ url_for('catalogue_view') }}" class="{% if request.endpoint and request.endpoint.startswith('catalogue') %}is-active{% endif %}">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        <span>קטלוג</span>
+      </a>
+      <a href="{{ url_for('chat.chat_index') }}" class="{% if request.endpoint and request.endpoint.startswith('chat.') %}is-active{% endif %}">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+        <span>צ'אט</span>
+      </a>
+    </nav>
+
+    <div class="spa-sidebar-foot">
+      <div class="row">
+        <span class="label">DEFCON</span>
+        <span class="dot"></span>
+      </div>
+      <div class="val mono">Sweeper Agent</div>
+    </div>
+  </aside>
+
+  <main class="spa-main">
+    {% block content %}{% endblock %}
+  </main>
+</div>
+
+<!-- Progressive SPA wiring: fetch wrapper + toasts. Defer so DOM is ready. -->
+<script src="/static/sweeper.js" defer></script>
+
+<!-- Toast container — window.sweeper.toast() appends here. -->
+<div id="toast-host"
+     class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center pointer-events-none"
+     aria-live="polite" aria-atomic="true"></div>
+
+</body>
+</html>

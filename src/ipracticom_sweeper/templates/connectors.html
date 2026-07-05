@@ -1,0 +1,277 @@
+{% extends "base_spa.html" %}
+{% block title %}Connectors — סוויפר iPracticom{% endblock %}
+{% block content %}
+
+<div class="section">
+  <h2 class="section-title">חיבורי AWS SSM — שרתים מרוחקים</h2>
+  <p style="color: var(--slate); font-size: 14px; margin-top: -8px; margin-bottom: 20px;">
+    הגדר שרתי EC2 שהסוכן ינטר דרך AWS Systems Manager (ללא SSH).
+    הקובץ נשמר ב-<code>$IPRACTICOM_SWEEPER_STATE_DIR/connectors.yaml</code>.
+    {% if is_remote %}
+      <br><strong style="color: var(--warning);">מצב Remote — הפעולות עוברות דרך ה-agent המרוחק.</strong>
+    {% endif %}
+  </p>
+
+  {% if saved_message %}
+    <div class="notice notice-ok">{{ saved_message }}</div>
+  {% endif %}
+  {% if error_message %}
+    <div class="notice notice-err">שגיאה: {{ error_message }}</div>
+  {% endif %}
+
+  <!-- Existing connectors table -->
+  {% if connectors %}
+  <table class="connectors-table">
+    <thead>
+      <tr>
+        <th>שם</th>
+        <th>Instance ID</th>
+        <th>Region</th>
+        <th>תגיות</th>
+        <th>פעיל</th>
+        <th>איסוף אחרון</th>
+        <th>שגיאה אחרונה</th>
+        <th>פעולות</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for c in connectors %}
+      <tr class="connector-row {{ '' if c.enabled else 'connector-disabled' }}">
+        <td><strong>{{ c.name }}</strong></td>
+        <td><code dir="ltr">{{ c.instance_id }}</code></td>
+        <td><code dir="ltr">{{ c.region }}</code></td>
+        <td>
+          {% if c.tags %}
+            {% for k, v in c.tags.items() %}
+              <span class="tag-chip">{{ k }}={{ v }}</span>
+            {% endfor %}
+          {% else %}
+            <span style="color: var(--slate);">—</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if c.enabled %}
+            <span class="status-badge status-ok">פעיל</span>
+          {% else %}
+            <span class="status-badge status-off">מושבת</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if c.last_collected_at %}
+            <span dir="ltr" style="font-size: 12px; color: var(--slate);">
+              {{ c.last_collected_at | round | int }}
+            </span>
+          {% else %}
+            <span style="color: var(--slate);">אף פעם</span>
+          {% endif %}
+        </td>
+        <td>
+          {% if c.last_error %}
+            <span class="status-badge status-warn" title="{{ c.last_error }}">
+              {{ c.last_error[:40] }}{% if c.last_error|length > 40 %}…{% endif %}
+            </span>
+          {% else %}
+            <span style="color: var(--slate);">—</span>
+          {% endif %}
+        </td>
+        <td class="connector-actions">
+          <form method="POST" style="display:inline;">
+            <input type="hidden" name="action" value="test">
+            <input type="hidden" name="name" value="{{ c.name }}">
+            <button type="submit" class="btn-tiny">בדוק</button>
+          </form>
+          <form method="POST" style="display:inline;">
+            <input type="hidden" name="action" value="toggle">
+            <input type="hidden" name="name" value="{{ c.name }}">
+            <input type="hidden" name="enabled" value="{{ '0' if c.enabled else '1' }}">
+            <button type="submit" class="btn-tiny">
+              {{ 'השבת' if c.enabled else 'הפעל' }}
+            </button>
+          </form>
+          <form method="POST" style="display:inline;"
+                onsubmit="return confirm('למחוק את {{ c.name }}?');">
+            <input type="hidden" name="action" value="delete">
+            <input type="hidden" name="name" value="{{ c.name }}">
+            <button type="submit" class="btn-tiny btn-danger">מחק</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="empty-state">
+    <p>עוד לא הוגדרו connectors. הוסף את הראשון למטה.</p>
+  </div>
+  {% endif %}
+
+  <!-- Add new connector -->
+  <fieldset class="settings-group" style="margin-top: 30px;">
+    <legend>הוסף connector חדש</legend>
+    <form method="POST" class="settings-form">
+      <input type="hidden" name="action" value="create">
+
+      <div class="form-row">
+        <label for="name">שם (ייחודי, באנגלית)</label>
+        <input type="text" id="name" name="name" required
+               pattern="[a-zA-Z0-9_-]+"
+               placeholder="prod-web-1"
+               dir="ltr">
+        <small style="color: var(--slate);">
+          השם משמש כמזהה ייחודי לאורך כל המערכת (קבצים, Slack, dashboard).
+        </small>
+      </div>
+
+      <div class="form-row">
+        <label for="instance_id">EC2 Instance ID</label>
+        <input type="text" id="instance_id" name="instance_id" required
+               pattern="i-[a-f0-9]+"
+               placeholder="i-0123456789abcdef0"
+               dir="ltr">
+      </div>
+
+      <div class="form-row">
+        <label for="region">AWS Region</label>
+        <input type="text" id="region" name="region"
+               value="il-central-1"
+               placeholder="il-central-1, us-east-1, eu-west-1..."
+               dir="ltr">
+      </div>
+
+      <div class="form-row">
+        <label for="tags">תגיות (אופציונלי)</label>
+        <input type="text" id="tags" name="tags"
+               placeholder="env=prod,role=web"
+               dir="ltr">
+        <small style="color: var(--slate);">
+          פורמט: key=value,key=value. לא משפיע על האיסוף עצמו — רק תיוג.
+        </small>
+      </div>
+
+      <div class="settings-actions">
+        <button type="submit" class="btn-primary">הוסף connector</button>
+      </div>
+    </form>
+  </fieldset>
+
+  <p style="margin-top: 30px;">
+    <a href="{{ url_for('settings') }}">← חזרה להגדרות התראות</a>
+    ·
+    <a href="{{ url_for('fleet_view') }}">צפה ב-fleet view →</a>
+  </p>
+</div>
+
+<style>
+.connectors-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+  font-size: 14px;
+}
+.connectors-table th {
+  text-align: right;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--border);
+  color: var(--slate);
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+.connectors-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.connector-disabled { opacity: 0.55; }
+.connector-actions { white-space: nowrap; }
+.connector-actions form { margin: 0 2px; }
+.btn-tiny {
+  background: var(--bg-elevated);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  font-family: inherit;
+}
+.btn-tiny:hover { background: var(--border); }
+.btn-danger { color: var(--danger); }
+.tag-chip {
+  display: inline-block;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 1px 6px;
+  font-size: 11px;
+  margin: 1px;
+  font-family: var(--font-mono);
+  direction: ltr;
+}
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--slate);
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  margin-top: 16px;
+}
+.form-row {
+  margin-bottom: 16px;
+}
+.form-row label {
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: 13px;
+}
+.form-row input {
+  width: 100%;
+  max-width: 400px;
+  padding: 8px 12px;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 14px;
+}
+.form-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+.status-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.status-ok    { background: rgba(63, 185, 80, 0.15);  color: var(--ok); }
+.status-warn  { background: rgba(210, 153, 34, 0.15); color: var(--warning); }
+.status-off   { background: rgba(139, 148, 158, 0.15); color: var(--slate); }
+
+/* Save button — slice 7: make the primary CTA obvious (was previously
+   indistinguishable from the page background in dark SPA shell). */
+.btn-primary {
+  background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+  color: white;
+  border: 1px solid #4f46e5;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 1px 3px rgba(79, 70, 229, 0.4);
+  transition: transform 80ms ease, box-shadow 120ms ease;
+}
+.btn-primary:hover {
+  background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+  box-shadow: 0 2px 6px rgba(79, 70, 229, 0.5);
+}
+.btn-primary:active { transform: translateY(1px); }
+.settings-actions { margin-top: 20px; padding-top: 12px; border-top: 1px solid var(--border); }
+</style>
+
+{% endblock %}

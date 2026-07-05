@@ -1,0 +1,76 @@
+{% extends "v6_layout.html" %}
+{% block title %}לוג חי — סוויפר iPracticom (v6){% endblock %}
+
+{% block v6_content %}
+<div class="v6-page-header">
+  <h1 class="v6-h1">לוג חי</h1>
+  <p class="v6-sub">
+    עדכון אוטומטי כל 3 שניות · מקור:
+    <code id="v6-log-name">—</code>
+  </p>
+</div>
+
+<div class="v6-logs-toolbar">
+  <button type="button" id="v6-logs-pause" class="v6-btn-link">⏸ השהיה</button>
+  <button type="button" id="v6-logs-clear" class="v6-btn-link">נקה תצוגה</button>
+  <label class="v6-mute v6-small">
+    <input type="checkbox" id="v6-logs-autoscroll" checked> auto-scroll
+  </label>
+</div>
+
+<div class="v6-surface-elevated v6-section v6-log-wrap">
+  <pre id="v6-logs-list" class="v6-log-pre"></pre>
+</div>
+
+<p class="v6-mute v6-small v6-section">
+  read-only tail · לא נוגע בקובץ. הסוכן לא ימחק או יסובב לוגים בלי אישור ידני.
+</p>
+
+<script>
+(function () {
+  var pre     = document.getElementById('v6-logs-list');
+  var nameEl  = document.getElementById('v6-log-name');
+  var pauseBtn = document.getElementById('v6-logs-pause');
+  var clearBtn = document.getElementById('v6-logs-clear');
+  var autoCb  = document.getElementById('v6-logs-autoscroll');
+
+  var paused = false;
+  var lastPayload = '';
+
+  function setPaused(v) {
+    paused = v;
+    pauseBtn.textContent = v ? '▶ המשך' : '⏸ השהיה';
+  }
+
+  pauseBtn.addEventListener('click', function () { setPaused(!paused); });
+  clearBtn.addEventListener('click', function () { pre.textContent = ''; });
+
+  function render(lines) {
+    if (!lines || !lines.length) {
+      if (!pre.textContent) pre.textContent = '— אין לוג זמין —';
+      return;
+    }
+    var sig = lines.length + ':' + lines[lines.length - 1];
+    if (sig === lastPayload) return;          // unchanged, skip work
+    lastPayload = sig;
+    pre.textContent = lines.slice(-50).join('\n');
+    if (autoCb.checked) pre.scrollTop = pre.scrollHeight;
+  }
+
+  function tick() {
+    if (paused) return;
+    fetch('/v6/logs', { credentials: 'same-origin' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j) return;
+        nameEl.textContent = j.log || '(no log)';
+        render(j.lines || []);
+      })
+      .catch(function () { /* keep last render */ });
+  }
+  setPaused(false);
+  tick();
+  setInterval(tick, 3000);
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,39 @@
+[Unit]
+Description=iPracticom AWS Linux Sweeper - agent HTTP API (dashboard + v6)
+Documentation=https://github.com/dizeldz20-ux/ipracticom-sweeper-private
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Long-lived Flask service. Binds 127.0.0.1 by default (safe); set
+# SWEEPER_API_HOST=0.0.0.0 in /etc/ipracticom-sweeper/agent.env to expose.
+# Load operator config (AGENT_API_TOKEN, SWEEPER_API_HOST, SLACK/TELEGRAM).
+# Leading '-' = optional: the unit still starts if the file is absent.
+EnvironmentFile=-/etc/ipracticom-sweeper/agent.env
+ExecStart=/usr/bin/python3 -m ipracticom_sweeper.dashboard --port 8787
+WorkingDirectory=/var/lib/ipracticom-sweeper
+User=root
+Group=root
+# Same hardening as the sweeper service
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=true
+NoNewPrivileges=false
+# Dashboard reads audit/connectors/metrics.db — needs RW to /var/lib/ipracticom-sweeper
+ReadWritePaths=/var/lib/ipracticom-sweeper /var/log/ipracticom-sweeper
+# Memory + CPU caps (dashboard is light; tight here to keep one bad host from monopolising RAM)
+MemoryMax=512M
+CPUQuota=80%
+Restart=on-failure
+RestartSec=10s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ipracticom-sweeper-api
+# NOTE: unlike the oneshot sweeper (whose exit codes 1-3 encode DEFCON),
+# this is a long-lived Flask server — ANY exit is abnormal. Do NOT add
+# SuccessExitStatus here: it would mask crashes (exit 1-3) and, with
+# Restart=on-failure, leave the dashboard dead instead of restarting it.
+
+[Install]
+WantedBy=multi-user.target

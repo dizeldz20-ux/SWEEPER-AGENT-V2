@@ -1,0 +1,107 @@
+{% extends "base_spa.html" %}
+{% block title %}הגדרות — סוויפר iPracticom{% endblock %}
+{% block content %}
+
+<div class="section">
+  <h2 class="section-title">הגדרות התראות</h2>
+  <p style="color: var(--slate); font-size: 14px; margin-top: -8px; margin-bottom: 20px;">
+    חבר את הסוכן לערוצי ההתראה. הסוכן יטען את ההגדרות בריצה הבאה (עד 5 דקות).
+    הקובץ נשמר ב-<code>/etc/ipracticom-sweeper/notifications.env</code> עם הרשאות 600.
+  </p>
+
+  <div class="settings-subnav" style="margin-bottom: 20px; display: flex; gap: 12px; font-size: 14px;">
+    <span style="color: var(--slate);">מקטעים:</span>
+    <a href="{{ url_for('settings') }}" style="color: var(--accent); text-decoration: underline;">התראות</a>
+    <a href="{{ url_for('settings_connectors') }}" style="color: var(--accent);">מחברים (AWS SSM)</a>
+    <a href="{{ url_for('fleet_view') }}" style="color: var(--accent);">צי שרתים</a>
+  </div>
+
+  {% if saved_message %}
+    <div class="notice notice-ok">{{ saved_message }}</div>
+  {% endif %}
+  {% if error_message %}
+    <div class="notice notice-err">שגיאה: {{ error_message }}</div>
+  {% endif %}
+
+  <form method="POST" action="{{ url_for('settings') }}" class="settings-form">
+    <!-- Slack -->
+    <fieldset class="settings-group">
+      <legend>Slack (Webhook)</legend>
+      <p class="settings-hint">
+        צור Incoming Webhook ב-Slack workspace שלך והדבק את ה-URL כאן.
+        <a href="https://api.slack.com/messaging/webhooks" target="_blank" rel="noopener">הוראות</a>
+      </p>
+      <label for="slack_webhook_url">כתובת Webhook של Slack</label>
+      <input type="url" id="slack_webhook_url" name="slack_webhook_url"
+             value="{{ current.SLACK_WEBHOOK_URL or '' }}"
+             placeholder="https://hooks.slack.com/services/T000/B000/XXX"
+             autocomplete="off" dir="ltr">
+      <div class="settings-actions">
+        <button type="submit" name="action" value="save" class="btn-secondary">שמור</button>
+        <button type="button" class="btn-test" data-channel="slack">בדוק חיבור</button>
+        <span class="test-result" id="test-slack"></span>
+      </div>
+    </fieldset>
+
+    <!-- Telegram -->
+    <fieldset class="settings-group">
+      <legend>Telegram Bot</legend>
+      <p class="settings-hint">
+        צור בוט ב-<a href="https://t.me/BotFather" target="_blank" rel="noopener">@BotFather</a>,
+        הוסף אותו לקבוצה או צ'אט, וקבל את ה-Chat ID דרך
+        <a href="https://t.me/userinfobot" target="_blank" rel="noopener">@userinfobot</a>.
+      </p>
+      <label for="telegram_bot_token">Bot Token</label>
+      <input type="text" id="telegram_bot_token" name="telegram_bot_token"
+             value="{{ current.TELEGRAM_BOT_TOKEN or '' }}"
+             placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz"
+             autocomplete="off" dir="ltr">
+
+      <label for="telegram_chat_id">Chat ID</label>
+      <input type="text" id="telegram_chat_id" name="telegram_chat_id"
+             value="{{ current.TELEGRAM_CHAT_ID or '' }}"
+             placeholder="-1001234567890"
+             autocomplete="off" dir="ltr">
+
+      <div class="settings-actions">
+        <button type="submit" name="action" value="save" class="btn-secondary">שמור</button>
+        <button type="button" class="btn-test" data-channel="telegram">בדוק חיבור</button>
+        <span class="test-result" id="test-telegram"></span>
+      </div>
+    </fieldset>
+
+    <div class="settings-help">
+      <strong>חשוב:</strong> שני הערוצים הם אופציונליים. אם שניהם ריקים, הסוכן ממשיך לרוץ בלי התראות חיצוניות.
+      הלוגים נכתבים בכל מקרה ל-<code>/var/log/journal</code>.
+    </div>
+  </form>
+</div>
+
+<script>
+document.querySelectorAll('.btn-test').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const channel = btn.dataset.channel;
+    const out = document.getElementById('test-' + channel);
+    out.textContent = 'בודק...';
+    out.className = 'test-result pending';
+    try {
+      const fd = new FormData();
+      fd.append('channel', channel);
+      const r = await fetch('{{ url_for("settings_test") }}', { method: 'POST', body: fd });
+      const data = await r.json();
+      if (data.ok) {
+        out.textContent = '✓ ' + data.message;
+        out.className = 'test-result ok';
+      } else {
+        out.textContent = '✗ ' + (data.error || data.message || 'נכשל');
+        out.className = 'test-result err';
+      }
+    } catch (e) {
+      out.textContent = '✗ שגיאת רשת';
+      out.className = 'test-result err';
+    }
+  });
+});
+</script>
+
+{% endblock %}

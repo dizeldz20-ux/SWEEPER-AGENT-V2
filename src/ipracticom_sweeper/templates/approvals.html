@@ -1,0 +1,48 @@
+{% extends "base_spa.html" %}
+{% block title %}אישורים — סוויפר iPracticom{% endblock %}
+{% block content %}
+
+<div class="section">
+  <h2 class="section-title">תיקונים הממתינים לאישור
+    <span class="count">{{ pending|length }} ממתינים</span>
+  </h2>
+
+  {% if pending %}
+    <p style="color: var(--text-mute); font-size: 13px; margin: -8px 0 16px;">
+      תיקונים אלו סווגו כרגישים ולא בוצעו אוטומטית. לחץ על הצעה כדי לראות מה הסוכן היה עושה, ולאשר או לדחות.
+    </p>
+    {% for p in pending %}
+      <div class="approval-card needs-approval">
+        <div class="approval-header">
+          <span class="approval-title">{{ p.action }}</span>
+          <span class="approval-time" dir="ltr">{{ p.created_at }}</span>
+        </div>
+        <div class="approval-reason">{{ p.reason }}</div>
+        <div class="approval-actions">
+          <a href="{{ url_for('approval_detail', pid=p.id) }}" class="btn-secondary">צפה בהצעה</a>
+        </div>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-title">אין תיקונים הממתינים לאישור</div>
+      <p>תיקונים רגישים (כמו restart לשירות) יופיעו כאן כשהסוכן יזהה בעיה שדורשת התערבות.</p>
+      <p style="margin-top: 14px;">
+        תיקונים אוטומטיים (drop_caches, journald vacuum, וכו') מתבצעים ומתועדים ביומן הביקורת.
+      </p>
+    </div>
+  {% endif %}
+</div>
+
+<div class="section">
+  <h2 class="section-title">איך זה עובד</h2>
+  <ol style="color: var(--text-soft); font-size: 13px; line-height: 1.8; padding-inline-start: 20px;">
+    <li>הסוכן רץ אוטומטית כל 5 דקות ובודק את המערכת.</li>
+    <li>תיקונים בטוחים (drop_caches, log vacuum, top processes, התראות) מתבצעים אוטומטית ומתועדים ב-<code>audit/repairs.jsonl</code>.</li>
+    <li>תיקונים רגישים (restart לשירות) נכתבים כהצעה במקום להתבצע.</li>
+    <li>אתה רואה את ההצעה כאן, עם הסיבה, הפקודה המדויקת, וההשפעה.</li>
+    <li>אחרי אישור — התיקון מתבצע ונרשם. אחרי דחייה — ההצעה נסגרת ולא תחזור.</li>
+  </ol>
+</div>
+
+{% endblock %}

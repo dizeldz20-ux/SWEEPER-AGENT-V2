@@ -1,0 +1,85 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ipracticom_sweeper"
+version = "1.6.0"
+description = "AWS Linux server health monitor and auto-repair agent for iPracticom (FreeSWITCH + Postgres on AWS)"
+requires-python = ">=3.10"
+readme = "README.md"
+license = { text = "Proprietary" }
+authors = [{ name = "iPracticom" }]
+keywords = ["monitoring", "freeswitch", "postgres", "aws", "self-healing", "observability"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: System Administrators",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Monitoring",
+]
+dependencies = [
+    "structlog>=24.0.0",
+    "pyyaml>=6.0",
+    "httpx>=0.27.0",
+    "boto3>=1.34.0",
+    "flask>=3.0.0",
+    "flask-sock>=0.7.0",
+    "uvicorn>=0.27.0",
+    "psutil>=5.9.0",
+]
+
+[project.optional-dependencies]
+# Required ONLY if you want Telegram alerts (otherwise the bot module is dormant).
+telegram = [
+    "python-telegram-bot[all]>=21.0.0",
+]
+# Required ONLY if you want to run the test suite.
+test = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+    "freezegun>=1.4.0",
+]
+# Everything an installing agent needs: package + tests + telegram.
+all = [
+    "ipracticom_sweeper[test,telegram]",
+]
+
+[project.scripts]
+# Installs three executables on `pip install`:
+#   - `ipracticom-sweeper`   : run a one-shot sweep (monitor + auto-repair)
+#   - `ipracticom-dashboard` : launch the Flask web UI on :5000
+#   - `ipracticom-agent-api` : launch the REST control plane on :8765
+ipracticom-sweeper   = "ipracticom_sweeper.sweeper:main"
+ipracticom-dashboard = "ipracticom_sweeper.dashboard:main"
+ipracticom-agent-api = "ipracticom_sweeper.agent_api:main"
+
+[project.urls]
+"Homepage"   = "https://github.com/ipracticom/ipracticom-sweeper"
+"Repository" = "https://github.com/ipracticom/ipracticom-sweeper"
+"Issues"     = "https://github.com/ipracticom/ipracticom-sweeper/issues"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths    = ["tests"]
+addopts      = "-ra --strict-markers"
+markers      = [
+    "integration: marks tests that require real services (FreeSWITCH, Postgres, etc.)",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+# Include the static SPA assets + runbook catalog + default config + the
+# built React SPA (webui/dist — see scripts/build-webui.sh / `make webui`).
+ipracticom_sweeper = [
+    "static/**/*",
+    "config/*.yaml",
+    "runbooks/*.yaml",
+    "rules/*.yaml",
+    "webui/dist/*",
+    "webui/dist/**/*",
+]

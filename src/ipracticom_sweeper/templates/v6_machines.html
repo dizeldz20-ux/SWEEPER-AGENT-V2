@@ -1,0 +1,151 @@
+{% extends "v6_layout.html" %}
+{% block title %}מכונות — סוויפר iPracticom (v6){% endblock %}
+
+{% block v6_content %}
+<div class="v6-page-header">
+  <h1 class="v6-h1">מכונות</h1>
+  <p class="v6-sub">
+    {% if summary %}
+      {{ summary.total_hosts }} שרת{{ '' if summary.total_hosts == 1 else 'ים' }} מנוטרים
+    {% else %}
+      אין נתוני צי עדיין
+    {% endif %}
+  </p>
+</div>
+
+{% if not hosts %}
+  <div class="v6-surface-elevated v6-empty">
+    <p class="v6-mute">לא הוגדרו connectors.</p>
+    <a href="{{ url_for('settings_connectors') }}" class="v6-btn">הוסף connector →</a>
+  </div>
+{% else %}
+  <div class="v6-surface-elevated v6-table-wrap">
+    <table class="v6-table">
+      <thead>
+        <tr>
+          <th>שם מארח</th>
+          <th>DEFCON</th>
+          <th>בעיות</th>
+          <th>מודולים</th>
+          <th>איסוף אחרון</th>
+          <th>תחזוקה</th>
+          <th>פעולות</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in hosts %}
+        {% set under_maint = h.host_id in maint_hosts %}
+        <tr class="v6-row-host defcon-{{ h.defcon_label }} {{ 'v6-row-maint' if under_maint }}">
+          <td class="v6-mono">{{ h.host_id }}</td>
+          <td>
+            <span class="v6-pill {{ 'v6-pill-rose' if h.defcon <= 2 else ('v6-pill-amber' if h.defcon <= 4 else 'v6-pill-emerald') }}">
+              {{ h.defcon }}
+            </span>
+          </td>
+          <td>
+            {% if h.problems_count > 0 %}
+              <span class="v6-pill v6-pill-rose">{{ h.problems_count }}</span>
+            {% else %}
+              <span class="v6-mute">0</span>
+            {% endif %}
+          </td>
+          <td class="v6-modules">
+            {% for mod, status in h.modules.items() %}
+              <span class="v6-pill {{ 'v6-pill-emerald' if status == 'ok' else ('v6-pill-amber' if status == 'warn' else 'v6-pill-rose') }}">
+                {{ mod }}{% if status != 'ok' %} ⚠{% endif %}
+              </span>
+            {% endfor %}
+          </td>
+          <td class="v6-mono">
+            {% if h.last_seen and h.last_seen > 0 %}
+              <span dir="ltr">{{ h.last_seen | int }}</span>
+            {% else %}
+              <span class="v6-mute">אין נתונים</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if under_maint %}
+              <span class="v6-pill v6-pill-amber" title="מצב תחזוקה פעיל">בתחזוקה</span>
+              <form method="POST" action="/v6/machines/{{ h.host_id }}/maintenance/off" class="v6-inline-form">
+                <button type="submit" class="v6-btn-link">בטל</button>
+              </form>
+            {% else %}
+              <div class="v6-maint-dropdown" data-host="{{ h.host_id }}">
+                <button type="button" class="v6-btn-link v6-maint-toggle" aria-haspopup="true">
+                  כניסה לתחזוקה ▾
+                </button>
+                <div class="v6-maint-menu" hidden>
+                  <form method="POST" action="/v6/machines/{{ h.host_id }}/maintenance">
+                    <button type="submit" name="duration_min" value="15">15 דקות</button>
+                  </form>
+                  <form method="POST" action="/v6/machines/{{ h.host_id }}/maintenance">
+                    <button type="submit" name="duration_min" value="60">שעה</button>
+                  </form>
+                  <form method="POST" action="/v6/machines/{{ h.host_id }}/maintenance">
+                    <button type="submit" name="duration_min" value="240">4 שעות</button>
+                  </form>
+                  <form method="POST" action="/v6/machines/{{ h.host_id }}/maintenance">
+                    <button type="submit" name="duration_min" value="0">ללא הגבלה</button>
+                  </form>
+                </div>
+              </div>
+            {% endif %}
+          </td>
+          <td>
+            <div class="v6-actions-dropdown" data-host="{{ h.host_id }}">
+              <button type="button" class="v6-btn-link v6-actions-toggle" aria-haspopup="true">
+                פעולות ▾
+              </button>
+              <div class="v6-actions-menu" hidden>
+                <form method="POST" action="/v6/machines/{{ h.host_id }}/action">
+                  <button type="submit" name="action" value="agent_restart">
+                    אתחול סוכן (אישור)
+                  </button>
+                </form>
+                <form method="POST" action="/v6/machines/{{ h.host_id }}/action"
+                      onsubmit="return confirm('לאתחל את {{ h.host_id }}? דורש אישור ידני.');">
+                  <button type="submit" name="action" value="reboot" class="v6-danger">
+                    Reboot (אישור)
+                  </button>
+                </form>
+                <form method="POST" action="/v6/machines/{{ h.host_id }}/action">
+                  <button type="submit" name="action" value="ssm_connect">
+                    חיבור SSM (אישור)
+                  </button>
+                </form>
+              </div>
+              <noscript>
+                <span class="v6-mute v6-small">JS כבוי — פעולות לא זמינות</span>
+              </noscript>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <p class="v6-mute v6-small v6-section">
+    פעולות הרסניות (restart, reboot, SSM) נכתבות לתור האישורים ב-<code>/approvals</code>.
+    הסוכן לא מבצע שום שינוי במכונה לפני שאתה מאשר ידנית.
+  </p>
+{% endif %}
+
+<script>
+document.addEventListener('click', function (e) {
+  document.querySelectorAll('.v6-maint-menu, .v6-actions-menu').forEach(function (m) {
+    if (!m.parentElement.contains(e.target)) m.hidden = true;
+  });
+});
+document.querySelectorAll('.v6-maint-toggle, .v6-actions-toggle').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    var menu = btn.parentElement.querySelector('.v6-maint-menu, .v6-actions-menu');
+    if (menu) {
+      var kind = btn.classList.contains('v6-maint-toggle') ? 'v6-actions-menu' : 'v6-maint-menu';
+      document.querySelectorAll('.' + kind).forEach(function (m) { m.hidden = true; });
+      menu.hidden = !menu.hidden;
+    }
+  });
+});
+</script>
+{% endblock %}

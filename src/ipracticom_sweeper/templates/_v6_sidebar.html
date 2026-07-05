@@ -1,0 +1,65 @@
+{# v0.6.0 — slice 5.2: Sidebar nav partial (RTL, 256px, sticky)
+   Used by `v6_layout.html`. NOT a replacement for `base.html` —
+   opt-in via `{% extends "v6_layout.html" %}`. #}
+
+<aside class="v6-sidebar" aria-label="ניווט ראשי">
+  <div class="v6-sidebar-brand">
+    <span class="v6-brand-mark">S</span>
+    <div class="v6-brand-text">
+      <span class="v6-brand-name">סוויפר</span>
+      <span class="v6-brand-sub">iPracticom</span>
+    </div>
+  </div>
+
+  <nav class="v6-sidebar-nav">
+    {# Resolve endpoint prefix to flag the active link. #}
+    {% set ep = request.endpoint or '' %}
+    <a href="/v6" class="v6-nav-item {{ 'active' if request.path == '/v6' }}">
+      <span class="v6-nav-dot"></span> לוח בקרה
+    </a>
+    <a href="/v6/machines" class="v6-nav-item {{ 'active' if request.path == '/v6/machines' }}">
+      <span class="v6-nav-dot"></span> מכונות
+    </a>
+    <a href="/v6/alerts/page" class="v6-nav-item {{ 'active' if request.path == '/v6/alerts/page' }}">
+      <span class="v6-nav-dot"></span> התראות
+    </a>
+    <a href="/v6/logs/page" class="v6-nav-item {{ 'active' if request.path == '/v6/logs/page' }}">
+      <span class="v6-nav-dot"></span> לוג חי
+    </a>
+    <a href="/v6/metrics/page" class="v6-nav-item {{ 'active' if request.path == '/v6/metrics/page' }}">
+      <span class="v6-nav-dot"></span> מדדים
+    </a>
+    <a href="{{ url_for('fleet_view') }}" class="v6-nav-item {{ 'active' if ep in ('fleet_view','fleet_host_detail') }}">
+      <span class="v6-nav-dot"></span> צי שרתים
+    </a>
+    <a href="{{ url_for('history') }}" class="v6-nav-item {{ 'active' if ep == 'history' }}">
+      <span class="v6-nav-dot"></span> היסטוריה
+    </a>
+    <a href="{{ url_for('approvals_view') }}" class="v6-nav-item {{ 'active' if ep in ('approvals_view','approval_detail','approval_approve','approval_reject') }}">
+      <span class="v6-nav-dot"></span> אישורים
+    </a>
+    <a href="{{ url_for('catalogue_view') }}" class="v6-nav-item {{ 'active' if ep in ('catalogue_view','catalogue_module') }}">
+      <span class="v6-nav-dot"></span> קטלוג
+    </a>
+    <a href="{{ url_for('inspector_view') }}" class="v6-nav-item {{ 'active' if ep in ('inspector_view','inspector_host') }}">
+      <span class="v6-nav-dot"></span> מפקח
+    </a>
+    <a href="{{ url_for('chat.chat_index') }}" class="v6-nav-item {{ 'active' if ep and ep.startswith('chat.') }}">
+      <span class="v6-nav-dot"></span> צ'אט
+    </a>
+    <a href="{{ url_for('settings') }}" class="v6-nav-item {{ 'active' if ep in ('settings','settings_test') }}">
+      <span class="v6-nav-dot"></span> הגדרות
+    </a>
+    <a href="{{ url_for('settings_connectors') }}" class="v6-nav-item {{ 'active' if ep == 'settings_connectors' }}">
+      <span class="v6-nav-dot"></span> מחברים
+    </a>
+  </nav>
+
+  <div class="v6-sidebar-status">
+    <span class="v6-status-dot v6-status-on" aria-hidden="true"></span>
+    <div class="v6-status-text">
+      <span class="v6-status-label">בוט טלגרם</span>
+      <span class="v6-status-value">פעיל</span>
+    </div>
+  </div>
+</aside>

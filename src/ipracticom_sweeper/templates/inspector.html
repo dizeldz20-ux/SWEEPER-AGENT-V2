@@ -1,0 +1,82 @@
+{% extends "base_spa.html" %}
+{% block title %}מפקח בדיקות — סוויפר iPracticom{% endblock %}
+{% block content %}
+
+<section class="inspector-page">
+  <header class="page-header">
+    <h1 class="page-title">מפקח בדיקות</h1>
+    <p class="page-sub">
+      צפייה בבדיקות שנאספו אחרונה לכל רכיב. בחר מארח כדי לראות את כל המודולים שלו.
+    </p>
+  </header>
+
+  {% if module_kind == 'local' %}
+    <div class="host-picker">
+      <strong>מארח נוכחי:</strong>
+      <span class="host-pill local">localhost</span>
+      {% if connectors %}
+        <span class="host-picker-label">או בחר מארח מרוחק:</span>
+        {% for c in connectors %}
+          <a class="host-pill" href="{{ url_for('inspector_host', name=c.name) }}">{{ c.name }}</a>
+        {% endfor %}
+      {% endif %}
+    </div>
+  {% else %}
+    <div class="host-picker">
+      <strong>מארח:</strong>
+      <span class="host-pill remote">{{ host }}</span>
+      <a class="host-pill" href="{{ url_for('inspector_view') }}">localhost</a>
+      {% for c in connectors %}
+        {% if c.name != host %}
+          <a class="host-pill" href="{{ url_for('inspector_host', name=c.name) }}">{{ c.name }}</a>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if snapshot_age is not none %}
+    <p class="snapshot-meta">
+      גיל הסנאפשוט:
+      {% if snapshot_age < 60 %}{{ snapshot_age | int }} שניות
+      {% elif snapshot_age < 3600 %}{{ (snapshot_age / 60) | round(1) }} דקות
+      {% else %}{{ (snapshot_age / 3600) | round(1) }} שעות{% endif %}
+    </p>
+  {% endif %}
+
+  {% if modules %}
+    <table class="modules-table">
+      <thead>
+        <tr>
+          <th>מודול</th>
+          <th>סטטוס</th>
+          <th>תקציר</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in modules %}
+          <tr class="module-row module-{{ m.status }}">
+            <td class="module-key"><code>{{ m.key }}</code></td>
+            <td class="module-status">
+              <span class="status-pill status-{{ m.status }}">{{ m.status }}</span>
+            </td>
+            <td class="module-summary">{{ m.summary }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <div class="empty-state">
+      <p>אין נתוני בדיקות להצגה עדיין.</p>
+      {% if module_kind == 'local' %}
+        <p>הרץ את ה-pipeline כדי לייצר סנאפשוט ראשון.</p>
+      {% else %}
+        <p>המארח <code>{{ host }}</code> טרם אסף נתונים. המתן למחזור האיסוף הבא.</p>
+      {% endif %}
+      {% if not connectors and module_kind == 'local' %}
+        <p><a href="{{ url_for('settings_connectors') }}">הוסף מארחים</a></p>
+      {% endif %}
+    </div>
+  {% endif %}
+</section>
+
+{% endblock %}

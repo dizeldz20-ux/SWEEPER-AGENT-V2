@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sweeper · בחירת גרסת דשבורד</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: oklch(0.13 0.02 250);
+    --surface: oklch(0.18 0.02 250);
+    --border: oklch(0.30 0.02 250);
+    --text: oklch(0.96 0.01 250);
+    --text-2: oklch(0.72 0.01 250);
+    --text-3: oklch(0.56 0.01 250);
+    --accent: oklch(0.78 0.16 162);
+    --indigo: oklch(0.62 0.19 274);
+    --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Heebo', system-ui, sans-serif; background: var(--bg); color: var(--text);
+    min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+    padding: 3rem 1.5rem; -webkit-font-smoothing: antialiased;
+  }
+  .en { font-family: 'Inter', sans-serif; }
+  header { text-align: center; max-width: 640px; margin-bottom: 2.5rem; animation: rise 400ms var(--ease); }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  @media (prefers-reduced-motion: reduce) { header, .choice { animation: none; } }
+  h1 { font-size: 1.875rem; font-weight: 700; letter-spacing: -0.02em; }
+  .lead { color: var(--text-2); margin-top: 0.75rem; font-size: 1.0625rem; line-height: 1.6; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; max-width: 900px; width: 100%; }
+  .choice {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 18px;
+    padding: 1.75rem; display: flex; flex-direction: column; gap: 1rem;
+    transition: transform 200ms var(--ease), border-color 200ms var(--ease); animation: rise 500ms var(--ease);
+  }
+  .choice:hover { transform: translateY(-3px); border-color: var(--text-3); }
+  .badge { align-self: flex-start; font-size: 0.75rem; font-weight: 600; padding: 0.25rem 0.75rem; border-radius: 999px; }
+  .badge.a { background: oklch(0.62 0.19 274 / 0.14); color: var(--indigo); }
+  .badge.b { background: oklch(0.78 0.16 162 / 0.14); color: var(--accent); }
+  .choice h2 { font-size: 1.25rem; font-weight: 700; }
+  .choice p { color: var(--text-2); font-size: 0.9375rem; line-height: 1.6; }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.375rem; }
+  .tag { font-size: 0.75rem; color: var(--text-3); background: oklch(0.22 0.02 250); border: 1px solid var(--border); border-radius: 8px; padding: 0.25rem 0.5rem; }
+  .cta {
+    margin-top: auto; display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+    padding: 0.75rem 1rem; border-radius: 10px; font-weight: 600; font-size: 0.9375rem;
+    text-decoration: none; transition: transform 160ms var(--ease), box-shadow 200ms var(--ease);
+  }
+  .cta:active { transform: scale(0.97); }
+  .cta.a { background: var(--indigo); color: white; box-shadow: 0 4px 12px oklch(0.62 0.19 274 / 0.3); }
+  .cta.b { background: var(--accent); color: var(--bg); box-shadow: 0 4px 12px oklch(0.78 0.16 162 / 0.3); }
+  footer { margin-top: 2.5rem; color: var(--text-3); font-size: 0.8125rem; text-align: center; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>בחר גרסת דשבורד</h1>
+    <p class="lead">שתי גרסאות עם אותם נתונים אמיתיים מהסוכן. פתח כל אחת, בדוק מה יותר נוח, ובחר.</p>
+  </header>
+
+  <div class="grid">
+    <article class="choice">
+      <span class="badge a">גרסה A</span>
+      <h2>AI Studio — נקי וישיר</h2>
+      <p>נאמן לעיצוב המקורי של Google AI Studio. כרטיסים מרווחים, פינות עגולות גדולות, גוון אינדיגו.</p>
+      <div class="tags">
+        <span class="tag en">Inter</span>
+        <span class="tag">אינדיגו</span>
+        <span class="tag">כרטיסים מרווחים</span>
+        <span class="tag">Tailwind</span>
+      </div>
+      <a href="/spa/a" class="cta a">פתח גרסה A ←</a>
+    </article>
+
+    <article class="choice">
+      <span class="badge b">גרסה B</span>
+      <h2>Impeccable — מלוטש</h2>
+      <p>אותו DNA עם ליטוש: צבעי OKLCH, גופן עברי Heebo, אנימציות עדינות, עיצוב צפוף וממוקד.</p>
+      <div class="tags">
+        <span class="tag">Heebo</span>
+        <span class="tag">OKLCH</span>
+        <span class="tag">אנימציות</span>
+        <span class="tag">RTL סמנטי</span>
+      </div>
+      <a href="/spa/b" class="cta b">פתח גרסה B ←</a>
+    </article>
+  </div>
+
+  <footer>iPracticom Sweeper · שתי הגרסאות מציגות נתונים חיים מ־<span class="en">/api/snapshot</span></footer>
+</body>
+</html>

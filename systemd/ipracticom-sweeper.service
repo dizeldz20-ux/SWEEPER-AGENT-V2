@@ -1,0 +1,42 @@
+[Unit]
+Description=iPracticom AWS Linux Sweeper - periodic health check
+Documentation=https://github.com/dizeldz20-ux/ipracticom-sweeper-private
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Load operator config so alerts actually fire (SLACK_WEBHOOK_URL,
+# TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID). Leading '-' = optional.
+EnvironmentFile=-/etc/ipracticom-sweeper/agent.env
+# Run the sweeper. Auto-repair is ON by default (drop_caches, journald vacuum).
+# To run diagnose-only, change ExecStart to include --no-repair.
+ExecStart=/usr/bin/python3 -m ipracticom_sweeper.sweeper --json --quiet
+# No WorkingDirectory needed — package is installed site-wide.
+WorkingDirectory=/var/lib/ipracticom-sweeper
+# Run as root — many repairs (drop_caches, systemctl restart) require it.
+User=root
+Group=root
+# Hardening — we still need /proc and /sys access
+ProtectSystem=full
+ProtectHome=read-only
+PrivateTmp=true
+NoNewPrivileges=false
+# Resource limits
+MemoryMax=256M
+CPUQuota=50%
+# Restart policy (for oneshot this runs once per timer trigger)
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=ipracticom-sweeper
+# exit codes:
+#   0 = green / ok
+#   1 = yellow / warn    (these are NORMAL outcomes, not failures)
+#   2 = orange/red / crit
+#   3 = black / error
+# systemd sees 1,2,3 as "failed" but they are status indicators.
+# We use SuccessExitStatus=1 2 3 so systemd only treats exit=4+ as real failure.
+SuccessExitStatus=1 2 3
+
+[Install]
+WantedBy=multi-user.target

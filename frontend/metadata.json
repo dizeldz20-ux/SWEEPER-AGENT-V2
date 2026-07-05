@@ -1,0 +1,6 @@
+{
+  "name": "Sweeper Dashboard",
+  "description": "Dashboard for monitoring Linux machines and PBX systems, configuring alert rules, and viewing system event histories.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

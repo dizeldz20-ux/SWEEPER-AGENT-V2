@@ -1,0 +1,129 @@
+# Default threshold rules for AWS Linux Sweeper
+# Edit values per-server-tier if needed. Merge with built-in defaults.
+#
+# NOTE: This copy is BUNDLED INSIDE the package and is what
+# `load_rules()` reads when the sweeper runs without an explicit
+# --rules flag (e.g. the systemd unit `python -m ipracticom_sweeper.sweeper`).
+# Keep it in sync with the repo-root rules/default.yaml.
+
+cpu:
+  # Load average per-core, 5min window
+  load_avg_5min_warn: 5.0
+  load_avg_5min_crit: 8.0
+  # % time stolen by hypervisor — high values = noisy neighbor
+  steal_percent_warn: 10.0
+  # % time waiting for I/O — high values = disk bottleneck
+  iowait_percent_warn: 20.0
+
+memory:
+  used_percent_warn: 80.0
+  used_percent_crit: 95.0
+  swap_used_percent_warn: 50.0
+
+disk:
+  used_percent_warn: 80.0
+  used_percent_crit: 95.0
+  inode_used_percent_warn: 80.0
+  # Mounts that MUST be read-only (security invariant)
+  read_only_mounts:
+    - /
+    - /boot
+
+network:
+  # Packet drops — high = NIC or kernel buffer issue
+  dropped_packets_warn: 100
+  tcp_retransmit_percent_warn: 5.0
+  # CLOSE_WAIT accumulation = app not closing sockets properly
+  connections_close_wait_warn: 1000
+
+services:
+  # These MUST be active. If down -> DEFCON 1
+  critical_list: []
+  # Window for counting failed units
+  failed_units_window_min: 5
+
+logs:
+  error_rate_per_min_warn: 10
+  oom_events_window_min: 60
+  # Window (minutes) for counting err+ priority log entries via journald
+  error_window_min: 5
+
+processes:
+  zombie_count_warn: 5
+  stuck_proc_minutes_warn: 30
+
+security:
+  # SSH brute-force detection
+  failed_ssh_per_min_warn: 5
+  sudo_failures_per_hour_warn: 3
+
+http:
+  slow_response_ms: 2000
+  endpoints: []
+
+ssl:
+  warn_days: 30
+  crit_days: 7
+  hosts: []
+
+smart:
+  reallocated_warn: 1
+  reallocated_crit: 100
+  temp_warn_c: 55
+  devices: []
+
+kernel:
+  window_minutes: 5
+
+iostat:
+  await_warn_ms: 50
+  await_crit_ms: 200
+  util_warn_percent: 80
+  util_crit_percent: 95
+
+process_tracker:
+  window_minutes: 60
+  top_n: 10
+  cpu_warn_percent: 80
+  cpu_crit_percent: 95
+  restart_warn: 3
+  restart_crit: 10
+
+fd_check:
+  warn_percent: 80
+  crit_percent: 95
+  top_n: 5
+
+aide:
+  critical_paths:
+    - /etc/
+    - /bin/
+    - /usr/bin/
+    - /usr/sbin/
+    - /sbin/
+    - /root/.ssh/
+
+storage:
+  enabled: true
+  retention_days: 30
+
+predict:
+  thresholds:
+    disk.used_percent: 95.0
+    memory.used_percent: 95.0
+    fd_check.used_percent: 95.0
+    cpu.load_5min: 8.0
+
+security_baseline:
+  expected_ssh_keys:
+    PermitRootLogin: prohibit-password
+    PasswordAuthentication: "no"
+  # empty = auto-baseline (do not alert on standard SUID set); see security_baseline.evaluate
+  expected_suid: []
+  allowed_ports:
+    - 22
+    - 25
+    - 80
+    - 443
+    - 8810
+    - 8804

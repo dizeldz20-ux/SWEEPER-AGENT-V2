@@ -1,0 +1,11 @@
+{% extends "base_spa.html" %}
+{% block title %}שגיאה — סוויפר iPracticom{% endblock %}
+{% block content %}
+<div class="bg-slate-900 rounded-3xl border border-slate-800 p-8 max-w-2xl">
+  <h2 class="text-2xl font-bold text-white mb-4">אירעה שגיאה</h2>
+  <p class="text-slate-300 text-base leading-relaxed">{{ message }}</p>
+  <p class="mt-6">
+    <a href="{{ url_for('index') }}" class="text-indigo-400 hover:text-indigo-300">חזרה ללוח הבקרה</a>
+  </p>
+</div>
+{% endblock %}

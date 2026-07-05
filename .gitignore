@@ -1,0 +1,82 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+.eggs/
+build/
+dist/
+# ...but the vendored built React SPA MUST ship in git — install.sh does
+# `pip install -e .` from a fresh clone (no npm build on the target machine),
+# and MANIFEST.in / package-data package webui/dist into the wheel.
+!src/ipracticom_sweeper/webui/dist/
+!src/ipracticom_sweeper/webui/dist/**
+.installed.cfg
+*.egg-link
+MANIFEST
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Test caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+.cache
+
+# Environment files (never commit secrets)
+.env
+.env.*
+!.env.example
+*.env.local
+*.env.production
+*.env.development
+secrets.yaml
+credentials.yaml
+*.credentials
+
+# Keys / certs / tokens
+*.pem
+*.key
+*.pub
+id_rsa*
+id_ed25519*
+id_ecdsa*
+*.p12
+*.pfx
+secrets/
+.secrets/
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# OS
+Thumbs.db
+
+# Logs (keep dir, ignore contents)
+*.log
+logs/*.log
+!logs/.gitkeep
+
+# Runtime state
+var/
+*.pid
+*.sock
+
+# Local config overrides
+.local/

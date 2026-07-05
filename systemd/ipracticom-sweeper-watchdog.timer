@@ -1,0 +1,12 @@
+[Unit]
+Description=iPracticom Sweeper watchdog timer (60s)
+Requires=ipracticom-sweeper-watchdog.service
+
+[Timer]
+OnBootSec=60s
+OnUnitActiveSec=60s
+AccuracySec=5s
+Unit=ipracticom-sweeper-watchdog.service
+
+[Install]
+WantedBy=timers.target

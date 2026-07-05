@@ -1,0 +1,43 @@
+{# v0.6.0 — slice 5.3: 4-card top stats bar.
+   Renders the values from `stats` (built by `_fetch_v6_stats()`).
+   Every card falls back to "—" if the data source is unavailable. #}
+
+<div class="v6-stats-bar">
+  <div class="v6-stat-card" data-card="machines">
+    <div class="v6-stat-label">מכונות</div>
+    <div class="v6-stat-value">{{ stats.total_machines }}</div>
+    <div class="v6-stat-hint">
+      {% if stats.pbx_count is number and stats.pbx_count > 0 %}
+        {{ stats.pbx_count }} PBX פעילים
+      {% else %}
+        פעיל / לא זמין
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="v6-stat-card" data-card="pbx">
+    <div class="v6-stat-label">PBX</div>
+    <div class="v6-stat-value">{{ stats.pbx_count }}</div>
+    <div class="v6-stat-hint">מופעי FreeSWITCH</div>
+  </div>
+
+  <div class="v6-stat-card v6-stat-card-alert" data-card="critical">
+    <div class="v6-stat-label">קריטי</div>
+    <div class="v6-stat-value {{ 'v6-pulse-fast' if stats.critical_count is number and stats.critical_count > 0 }}">
+      {{ stats.critical_count }}
+    </div>
+    <div class="v6-stat-hint">
+      {% if stats.defcon is number %}
+        DEFCON {{ stats.defcon }}
+      {% else %}
+        אין נתון
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="v6-stat-card" data-card="events">
+    <div class="v6-stat-label">אירועים היום</div>
+    <div class="v6-stat-value">{{ stats.events_today }}</div>
+    <div class="v6-stat-hint">מחצות UTC</div>
+  </div>
+</div>

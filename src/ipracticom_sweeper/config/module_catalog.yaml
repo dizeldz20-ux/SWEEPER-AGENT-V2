@@ -1,0 +1,650 @@
+# iPracticom Sweeper — Module Catalog
+#
+# This file lists every monitor, repair and runbook the agent can run.
+# The dashboard reads it to populate the "Available Modules" panel so
+# the operator can pick what runs on each host.
+#
+# Schema (per entry):
+#   name:        short id (matches the registered function name)
+#   kind:        monitor | repair | runbook
+#   title_en:    English one-liner
+#   title_he:    Hebrew one-liner (technical terms in English OK)
+#   description: longer explanation (2-3 lines, both languages ok)
+#   params:      list of {name, type, default, description} for the
+#                knobs the operator can tweak per host
+#   tags:        free-form labels for filtering (fs, pg, network, ...)
+#   risk:        low | medium | high — affects default require_approval
+#
+# When you add a new monitor/repair/runbook to the agent, also add an
+# entry here or it won't show up in the dashboard.
+#
+# Validation: module_registry.py loads this file and cross-checks each
+# `name` against the actual registered functions in monitor/, repair/,
+# and runbooks/. Names that don't exist in the code are flagged.
+
+- name: disk_check
+  kind: monitor
+  title_en: "Disk usage"
+  title_he: "שימוש בדיסק"
+  description: "Alerts when free space on / drops below threshold."
+  params:
+    - {name: threshold_pct, type: int, default: 85, description: "Alert when used% >= this"}
+    - {name: interval_sec, type: int, default: 60,  description: "How often to check"}
+  tags: [disk, storage]
+  risk: low
+
+- name: memory_check
+  kind: monitor
+  title_en: "Memory pressure"
+  title_he: "לחץ זיכרון"
+  description: "Detects low available memory based on /proc/meminfo."
+  params:
+    - {name: threshold_pct, type: int, default: 90}
+    - {name: interval_sec, type: int, default: 60}
+  tags: [memory, oom]
+  risk: low
+
+- name: cpu_check
+  kind: monitor
+  title_en: "CPU load"
+  title_he: "עומס מעבד"
+  description: "5-minute load average vs. core count."
+  params:
+    - {name: load_per_core, type: float, default: 2.0}
+  tags: [cpu]
+  risk: low
+
+- name: fs_inode_check
+  kind: monitor
+  title_en: "FreeSWITCH inode usage"
+  title_he: "שימוש inode ב-FreeSWITCH"
+  description: "Critical for FS: inodes exhausted = new calls fail (see monitor/freeswitch.py check_fs13_log_disk_usage)."
+  params:
+    - {name: threshold_pct, type: int, default: 90}
+  tags: [freeswitch, fs]
+  risk: high
+
+- name: freeswitch_health
+  kind: monitor
+  title_en: "FreeSWITCH process health"
+  title_he: "בריאות תהליך FreeSWITCH"
+  description: "Checks fs_cli 'status' output for running/registered gateways (see monitor/freeswitch.py check_fs01..15)."
+  params: []
+  tags: [freeswitch, fs]
+  risk: high
+
+- name: freeswitch_v2
+  kind: monitor
+  title_en: "FreeSWITCH v2 deep checks"
+  title_he: "בדיקות עומק FreeSWITCH v2"
+  description: "Sofia/Gateway/SIP/Calls deep inspection (freeswitch_v2)."
+  params: []
+  tags: [freeswitch, fs]
+  risk: high
+
+- name: freeswitch_v2_part2
+  kind: monitor
+  title_en: "FreeSWITCH v2 deep checks (part 2)"
+  title_he: "בדיקות עומק FreeSWITCH v2 (חלק 2)"
+  description: "Continued deep checks (freeswitch_v2_part2)."
+  params: []
+  tags: [freeswitch, fs]
+  risk: high
+
+- name: ntp_check
+  kind: monitor
+  title_en: "NTP clock skew"
+  title_he: "סטיית שעון NTP"
+  description: "chronyc/ntpq tracking; normalizes sec/ms/us units."
+  params:
+    - {name: max_offset_ms, type: int, default: 500}
+  tags: [ntp, time]
+  risk: low
+
+- name: systemd_state
+  kind: monitor
+  title_en: "systemd unit state"
+  title_he: "מצב יחידות systemd"
+  description: "Detects masked/disabled/failed units."
+  params: []
+  tags: [systemd, services]
+  risk: low
+
+- name: pg_long_query
+  kind: monitor
+  title_en: "Postgres long-running queries"
+  title_he: "שאילתות Postgres ארוכות"
+  description: "Queries running >5min by default; classifies by count."
+  params:
+    - {name: threshold_sec, type: int, default: 300}
+  tags: [postgres, pg, performance]
+  risk: low
+
+- name: pg_replication_lag
+  kind: monitor
+  title_en: "Postgres replication lag"
+  title_he: "פיגור רפליקציה ב-Postgres"
+  description: "Max replay_lag across replicas; disabled on stand-alone."
+  params:
+    - {name: max_lag_sec, type: int, default: 60}
+  tags: [postgres, pg, replication]
+  risk: medium
+
+- name: pg_locks
+  kind: monitor
+  title_en: "Postgres blocking locks"
+  title_he: "נעילות חוסמות ב-Postgres"
+  description: "Detects blocked queries via pg_blocking_pids()."
+  params: []
+  tags: [postgres, pg, locks]
+  risk: medium
+
+- name: pg_bloat
+  kind: monitor
+  title_en: "Postgres table bloat"
+  title_he: "נפיחות טבלאות ב-Postgres"
+  description: "Estimated dead-tuple ratio per table."
+  params:
+    - {name: max_bloat_pct, type: int, default: 30}
+  tags: [postgres, pg, maintenance]
+  risk: low
+
+- name: pg_autovacuum
+  kind: monitor
+  title_en: "Postgres autovacuum status"
+  title_he: "מצב autovacuum ב-Postgres"
+  description: "Checks autovacuum is enabled and recently active."
+  params: []
+  tags: [postgres, pg, maintenance]
+  risk: low
+
+- name: backup_fresh
+  kind: monitor
+  title_en: "Backup freshness"
+  title_he: "רעננות גיבויים"
+  description: "Alerts when last successful backup is older than threshold."
+  params:
+    - {name: max_age_hours, type: int, default: 24}
+  tags: [backup, dr]
+  risk: high
+
+- name: backup_size
+  kind: monitor
+  title_en: "Backup size anomaly"
+  title_he: "חריגה בגודל גיבוי"
+  description: "Flags backup whose size is far from the rolling average."
+  params:
+    - {name: deviation_pct, type: int, default: 50}
+  tags: [backup, dr]
+  risk: medium
+
+- name: restore_test
+  kind: monitor
+  title_en: "Restore drill"
+  title_he: "תרגיל שחזור"
+  description: "Periodically restores a backup to /tmp/restore-test to verify it."
+  params:
+    - {name: schedule_hours, type: int, default: 168}
+  tags: [backup, dr]
+  risk: medium
+
+- name: security_baseline
+  kind: monitor
+  title_en: "Security baseline drift"
+  title_he: "סטייה מ-baseline אבטחה"
+  description: "Compares /etc/passwd, sshd_config etc. against known-good."
+  params: []
+  tags: [security]
+  risk: high
+
+- name: aide_check
+  kind: monitor
+  title_en: "AIDE file-integrity changes"
+  title_he: "שינויים ב-AIDE (שלמות קבצים)"
+  description: "Surfaces AIDE warnings on critical paths."
+  params: []
+  tags: [security, integrity]
+  risk: high
+
+- name: ssl_check
+  kind: monitor
+  title_en: "TLS certificate expiry"
+  title_he: "פקיעת תעודת TLS"
+  description: "Days-until-expiry for configured certs."
+  params:
+    - {name: warn_days, type: int, default: 30}
+  tags: [tls, security]
+  risk: high
+
+- name: kernel_errors
+  kind: monitor
+  title_en: "Kernel errors in dmesg"
+  title_he: "שגיאות kernel ב-dmesg"
+  description: "Counts OOM, segfault, hardware errors per hour."
+  params: []
+  tags: [kernel, oom]
+  risk: high
+
+- name: cron_watch
+  kind: monitor
+  title_en: "Cron job health"
+  title_he: "בריאות משימות cron"
+  description: "Alerts if a watched cron job didn't run in its expected window."
+  params: []
+  tags: [cron]
+  risk: low
+
+- name: iostat
+  kind: monitor
+  title_en: "Disk I/O await"
+  title_he: "זמן המתנה בדיסק"
+  description: "iostat await time; flags slow storage."
+  params:
+    - {name: max_await_ms, type: int, default: 50}
+  tags: [disk, performance]
+  risk: low
+
+- name: egress
+  kind: monitor
+  title_en: "Outbound connectivity"
+  title_he: "קישוריות יוצאת"
+  description: "Smoke-checks external endpoints (DNS, NTP, AWS)."
+  params: []
+  tags: [network, egress]
+  risk: low
+
+- name: http_check
+  kind: monitor
+  title_en: "HTTP endpoint health"
+  title_he: "בריאות endpoint HTTP"
+  description: "Generic HTTP check; supports HTTPS, custom headers."
+  params:
+    - {name: url, type: str, default: ""}
+    - {name: timeout_sec, type: int, default: 5}
+  tags: [http, probe]
+  risk: low
+
+- name: process_tracker
+  kind: monitor
+  title_en: "Process lifetime tracker"
+  title_he: "מעקב תהליכים"
+  description: "Alerts when a watched process restarts too many times per hour."
+  params: []
+  tags: [process, restart]
+  risk: low
+
+- name: self_disk
+  kind: monitor
+  title_en: "Self-monitor: agent's own disk"
+  title_he: "ניטור עצמי: דיסק של הסוכן"
+  description: "Watches the disk where the agent itself runs."
+  params: []
+  tags: [self, disk]
+  risk: low
+
+- name: self_snapshot
+  kind: monitor
+  title_en: "Self-monitor: snapshot freshness"
+  title_he: "ניטור עצמי: רעננות snapshot"
+  description: "Alerts when last successful pipeline snapshot is stale."
+  params: []
+  tags: [self]
+  risk: low
+
+- name: fd_check
+  kind: monitor
+  title_en: "Open file descriptors"
+  title_he: "File descriptors פתוחים"
+  description: "Per-process FD count vs. ulimit."
+  params:
+    - {name: threshold_pct, type: int, default: 80}
+  tags: [process, ulimit]
+  risk: medium
+
+- name: smart_check
+  kind: monitor
+  title_en: "S.M.A.R.T. disk health"
+  title_he: "בריאות דיסק S.M.A.R.T."
+  description: "Reads smartctl; alerts on Reallocated/Pending sectors."
+  params: []
+  tags: [disk, hardware]
+  risk: high
+
+- name: network
+  kind: monitor
+  title_en: "Network interface state"
+  title_he: "מצב ממשקי רשת"
+  description: "Detects down interfaces and dropped packets."
+  params: []
+  tags: [network]
+  risk: low
+
+- name: logs
+  kind: monitor
+  title_en: "Log file growth"
+  title_he: "גדילת קבצי לוג"
+  description: "Watches a list of log files for runaway growth."
+  params:
+    - {name: max_mb_per_hour, type: int, default: 100}
+  tags: [disk, logs]
+  risk: low
+
+- name: health
+  kind: monitor
+  title_en: "Agent self-health (heartbeat tracker)"
+  title_he: "בריאות סוכן (מעקב heartbeat)"
+  description: "Tracks the agent's own heartbeat file; flags missing/stale/corrupt runs."
+  params:
+    - {name: max_age_sec, type: int, default: 7200}
+  tags: [self, agent, heartbeat]
+  risk: low
+
+- name: healthz_probe
+  kind: monitor
+  title_en: "Active HTTP /healthz probe"
+  title_he: "בדיקת /healthz פעילה"
+  description: "HTTP GET to a configured healthz endpoint; 2xx ok, 5xx warn, timeout/conn-err crit."
+  params:
+    - {name: timeout_sec, type: float, default: 5.0}
+    - {name: latency_warn_ms, type: float, default: 2000.0}
+  tags: [http, healthz, services]
+  risk: low
+
+- name: processes
+  kind: monitor
+  title_en: "Process health (zombies, stuck procs, top consumers)"
+  title_he: "בריאות תהליכים (זומבים, תקועים, צרכני CPU)"
+  description: "Detects zombies, stuck processes, and top CPU consumers via /proc."
+  params:
+    - {name: zombie_warn_count, type: int, default: 0}
+  tags: [processes, performance]
+  risk: low
+
+- name: uptime
+  kind: monitor
+  title_en: "System uptime"
+  title_he: "זמן פעילות המערכת"
+  description: "Alerts on unexpected reboots (uptime < 1h)."
+  params: []
+  # NOT a self-only check: a monitored machine's uptime (reboot detection) is
+  # a real signal for that machine. Tagged 'system' so it stays in the
+  # add-machine catalog; the 'self' tag is reserved for agent-only checks.
+  tags: [system, boot]
+  risk: low
+
+- name: services
+  kind: monitor
+  title_en: "Generic service status"
+  title_he: "מצב שירותים כללי"
+  description: "systemctl is-active for a configured list."
+  params:
+    - {name: units, type: list, default: []}
+  tags: [systemd, services]
+  risk: low
+
+- name: security
+  kind: monitor
+  title_en: "Generic security checks"
+  title_he: "בדיקות אבטחה כלליות"
+  description: "Permissive file modes, world-writable files, etc."
+  params: []
+  tags: [security]
+  risk: medium
+
+- name: aws
+  kind: monitor
+  title_en: "AWS region sanity"
+  title_he: "בדיקת אזור AWS"
+  description: "Confirms the host is in the expected AWS region."
+  params:
+    - {name: expected_region, type: str, default: "il-central-1"}
+  tags: [aws, cloud]
+  risk: low
+
+# Note: 'checks' is the orchestrator (monitor/checks.py), not a leaf monitor;
+# the catalog intentionally omits it. Cross-check policy lives in
+# config/module_registry._monitor_names().
+
+# ---------------------------------------------------------------------------
+# Repairs
+# ---------------------------------------------------------------------------
+
+- name: drop_caches
+  kind: repair
+  title_en: "Drop kernel page cache"
+  title_he: "שחרור page cache של ה-kernel"
+  description: "Sync + drop_caches (1=pagecache, 2+=slab too). Safe, no downtime."
+  params:
+    - {name: level, type: int, default: 3}
+  tags: [memory, cache]
+  risk: low
+
+- name: service_restart
+  kind: repair
+  title_en: "systemctl restart <unit>"
+  title_he: "הפעלה מחדש של service"
+  description: "Restarts a systemd unit. Brief downtime expected."
+  params:
+    - {name: unit, type: str, default: ""}
+  tags: [systemd, services]
+  risk: medium
+
+- name: log_truncate_journald
+  kind: repair
+  title_en: "Truncate old journald entries"
+  title_he: "חיתוך journald ישן"
+  description: "journalctl --vacuum-time=Nd."
+  params:
+    - {name: max_age_days, type: int, default: 7}
+  tags: [logs, disk]
+  risk: low
+
+- name: top_processes_snapshot
+  kind: repair
+  title_en: "Snapshot top processes"
+  title_he: "snapshot של תהליכים צורכי משאבים"
+  description: "Records top-N by CPU/mem to disk for forensic review."
+  params:
+    - {name: top_n, type: int, default: 10}
+  tags: [process, forensic]
+  risk: low
+
+- name: notify_human
+  kind: repair
+  title_en: "Send notification"
+  title_he: "שליחת התראה"
+  description: "Push a message to Telegram / Slack / webhook."
+  params:
+    - {name: channel, type: str, default: "all"}
+    - {name: defcon, type: int, default: 4}
+    - {name: summary, type: str, default: ""}
+  tags: [notify]
+  risk: low
+
+- name: dns_cache_purge
+  kind: repair
+  title_en: "Flush DNS cache"
+  title_he: "רענון DNS cache"
+  description: "nscd / systemd-resolved invalidate."
+  params:
+    - {name: service, type: str, default: "nscd"}
+  tags: [dns, network]
+  risk: low
+
+- name: fs_inode_warn_clear
+  kind: repair
+  title_en: "Clear FS inode warning flag"
+  title_he: "איפוס דגל אזהרת inode ב-FS"
+  description: "Acknowledge an inode warning; useful after manual cleanup."
+  params: []
+  tags: [freeswitch, fs]
+  risk: low
+
+- name: rotate_audit_now
+  kind: repair
+  title_en: "Rotate audit log now"
+  title_he: "סיבוב audit log מיידי"
+  description: "Forces audit log rotation outside of the scheduled window."
+  params: []
+  tags: [audit, logs]
+  risk: low
+
+- name: telegram_token_revalidate
+  kind: repair
+  title_en: "Revalidate Telegram token"
+  title_he: "אימות מחדש של טוקן טלגרם"
+  description: "Calls getMe to verify the bot token is still valid."
+  params: []
+  tags: [telegram]
+  risk: low
+
+- name: self_healthz_ping
+  kind: repair
+  title_en: "Self-ping healthz"
+  title_he: "פינג עצמי ל-healthz"
+  description: "Recursively pings our own /healthz to detect deadlocked state."
+  params: []
+  tags: [self]
+  risk: low
+
+- name: self_agent_restart
+  kind: repair
+  title_en: "Self restart agent"
+  title_he: "הפעלה עצמית מחדש של הסוכן"
+  description: "Restarts the sweeper's OWN systemd unit locally (no SSH) when self-monitoring finds it stuck (healthz crit / watchdog storm). Distinct from agent_restart, which targets a remote monitored host."
+  params:
+    - {name: unit, type: str, default: ""}
+  tags: [self, agent, recovery]
+  risk: medium
+
+- name: rotate_nginx_logs
+  kind: repair
+  title_en: "Rotate nginx logs"
+  title_he: "סיבוב לוגים של nginx"
+  description: "Moves + reopen nginx access/error logs and reloads."
+  params: []
+  tags: [nginx, logs]
+  risk: low
+
+- name: drop_freeswitch_cache
+  kind: repair
+  title_en: "Drop FreeSWITCH caches"
+  title_he: "שחרור caches של FreeSWITCH"
+  description: "Clears mod_sofia/db caches; FS may briefly re-register."
+  params: []
+  tags: [freeswitch, fs, cache]
+  risk: medium
+
+- name: reload_freeswitch_config
+  kind: repair
+  title_en: "Reload FreeSWITCH XML"
+  title_he: "טעינה מחדש של קונפיג FreeSWITCH"
+  description: "fs_cli reloadxml; no calls dropped."
+  params: []
+  tags: [freeswitch, fs, config]
+  risk: medium
+
+- name: clear_freeswitch_voicemail_locks
+  kind: repair
+  title_en: "Clear FS voicemail locks"
+  title_he: "איפוס נעילות voicemail ב-FS"
+  description: "Removes stale voicemail mutex locks blocking new messages."
+  params: []
+  tags: [freeswitch, fs, voicemail]
+  risk: medium
+
+- name: pg_vacuum
+  kind: repair
+  title_en: "Postgres VACUUM"
+  title_he: "VACUUM ב-Postgres"
+  description: "Per-table VACUUM (non-FULL). Requires explicit table name."
+  params:
+    - {name: table, type: str, default: ""}
+  tags: [postgres, pg, maintenance]
+  risk: medium
+
+- name: reboot
+  kind: repair
+  title_en: "Reboot host"
+  title_he: "אתחול שרת"
+  description: "Reboots a remote host via ssh + sudo shutdown -r now. Approval required."
+  params:
+    - {name: host, type: str, default: ""}
+  tags: [host, fleet, ssh]
+  risk: high
+
+- name: agent_restart
+  kind: repair
+  title_en: "Restart sweeper agent"
+  title_he: "הפעלה מחדש של סוכן ה-sweeper"
+  description: "Restarts ipracticom-sweeper-agent on a remote host via systemd over ssh."
+  params:
+    - {name: host, type: str, default: ""}
+  tags: [host, fleet, agent, ssh]
+  risk: medium
+
+- name: ssm_connect
+  kind: repair
+  title_en: "Open SSM session"
+  title_he: "פתיחת סשן SSM"
+  description: "Resolves the AWS instance id via SSM and starts a session to the host."
+  params:
+    - {name: host, type: str, default: ""}
+  tags: [host, fleet, aws, ssm]
+  risk: medium
+
+# ---------------------------------------------------------------------------
+# Runbooks (multi-step)
+# ---------------------------------------------------------------------------
+
+- name: disk_cleanup
+  kind: runbook
+  title_en: "Disk cleanup"
+  title_he: "ניקוי דיסק"
+  description: "Truncate journald → rotate nginx → drop caches."
+  params:
+    - {name: trigger_defcon, type: int, default: 3}
+    - {name: cooldown_seconds, type: int, default: 3600}
+  tags: [disk, fs]
+  risk: low
+
+- name: memory_pressure
+  kind: runbook
+  title_en: "Memory pressure relief"
+  title_he: "הקלת לחץ זיכרון"
+  description: "Drop caches → notify human → snapshot top processes."
+  params:
+    - {name: trigger_defcon, type: int, default: 3}
+    - {name: cooldown_seconds, type: int, default: 600}
+  tags: [memory, oom]
+  risk: medium
+
+- name: zombie_processes
+  kind: runbook
+  title_en: "Kill zombie processes"
+  title_he: "ניקוי תהליכי zombie"
+  description: "Find and reap zombies whose parents don't."
+  params:
+    - {name: trigger_defcon, type: int, default: 4}
+  tags: [process]
+  risk: low
+
+- name: audit_pressure
+  kind: runbook
+  title_en: "Audit log pressure"
+  title_he: "לחץ על audit log"
+  description: "Rotate audit log + clear FS inode warning."
+  params:
+    - {name: trigger_defcon, type: int, default: 3}
+  tags: [audit, logs]
+  risk: low
+
+- name: self_health_recovery
+  kind: runbook
+  title_en: "Self-recovery"
+  title_he: "התאוששות עצמית"
+  description: "Self-ping + restart sweeper.timer if dead."
+  params:
+    - {name: trigger_defcon, type: int, default: 2}
+  tags: [self]
+  risk: high

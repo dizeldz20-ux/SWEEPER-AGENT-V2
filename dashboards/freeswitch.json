@@ -1,0 +1,78 @@
+{
+  "title": "iPracticom Sweeper — FreeSWITCH",
+  "uid": "ipracticom-freeswitch",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["ipracticom", "sweeper", "freeswitch"],
+  "description": "FreeSWITCH health: 40 checks (FS-01..FS-40) covering process, SIP, RTP, CDR, license.",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "FS-01 Process Running",
+      "description": "1=running, 0=down.",
+      "targets": [
+        {"expr": "sweeper_check_status{check=\"fs01_process_running\"}", "legendFormat": "FS-01"}
+      ],
+      "gridPos": {"x": 0, "y": 0, "w": 4, "h": 3}
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "FS-11 Active Calls",
+      "description": "Number of currently-active calls (gauge).",
+      "targets": [
+        {"expr": "sweeper_check_status{check=\"fs11_active_calls\"}", "legendFormat": "FS-11"}
+      ],
+      "gridPos": {"x": 4, "y": 0, "w": 4, "h": 3}
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "FS-13 Log Disk %",
+      "description": "Log disk usage (gauge; threshold-mapped value).",
+      "targets": [
+        {"expr": "sweeper_check_status{check=\"fs13_log_disk_pct\"}", "legendFormat": "FS-13"}
+      ],
+      "gridPos": {"x": 8, "y": 0, "w": 4, "h": 3}
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "FS-39 License %",
+      "description": "Active calls vs license limit.",
+      "targets": [
+        {"expr": "sweeper_check_status{check=\"fs39_license\"}", "legendFormat": "FS-39"}
+      ],
+      "gridPos": {"x": 12, "y": 0, "w": 4, "h": 3}
+    },
+    {
+      "id": 5,
+      "type": "graph",
+      "title": "All FS Checks — Status Heatmap",
+      "description": "All 40 FreeSWITCH checks; values 1=ok, 2=warn, 3=crit.",
+      "targets": [
+        {
+          "expr": "sweeper_check_status{check=~\"fs.*\"}",
+          "legendFormat": "{{check}}"
+        }
+      ],
+      "gridPos": {"x": 0, "y": 3, "w": 24, "h": 8}
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "FS Crit Only",
+      "description": "Only checks reporting crit (3).",
+      "targets": [
+        {
+          "expr": "sweeper_check_status{check=~\"fs.*\"} == 3",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "gridPos": {"x": 0, "y": 11, "w": 24, "h": 6}
+    }
+  ]
+}

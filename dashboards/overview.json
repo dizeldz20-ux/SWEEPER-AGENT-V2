@@ -1,0 +1,98 @@
+{
+  "title": "iPracticom Sweeper — Overview",
+  "uid": "ipracticom-overview",
+  "schemaVersion": 38,
+  "version": 1,
+  "refresh": "30s",
+  "tags": ["ipracticom", "sweeper", "overview"],
+  "description": "Top-level health overview: pipeline runs, DEFCON, self-health, repair execution rate.",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Current DEFCON",
+      "description": "Latest DEFCON level (1=crit, 5=ok).",
+      "targets": [
+        {
+          "expr": "sweeper_defcon",
+          "legendFormat": "DEFCON"
+        }
+      ],
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4}
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Self Health",
+      "description": "1=ok, 0=degraded. Below 1 means the sweeper itself is unhealthy.",
+      "targets": [
+        {
+          "expr": "sweeper_self_health",
+          "legendFormat": "Self"
+        }
+      ],
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4}
+    },
+    {
+      "id": 3,
+      "type": "graph",
+      "title": "Pipeline Runs / min",
+      "description": "Counter of pipeline executions.",
+      "targets": [
+        {
+          "expr": "rate(sweeper_pipeline_runs_total[5m])",
+          "legendFormat": "runs/s"
+        }
+      ],
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 4}
+    },
+    {
+      "id": 4,
+      "type": "graph",
+      "title": "Pipeline Duration p50/p95/p99",
+      "description": "Histogram of pipeline run duration in seconds.",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.5, rate(sweeper_pipeline_duration_seconds_bucket[5m]))",
+          "legendFormat": "p50"
+        },
+        {
+          "expr": "histogram_quantile(0.95, rate(sweeper_pipeline_duration_seconds_bucket[5m]))",
+          "legendFormat": "p95"
+        },
+        {
+          "expr": "histogram_quantile(0.99, rate(sweeper_pipeline_duration_seconds_bucket[5m]))",
+          "legendFormat": "p99"
+        }
+      ],
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 6}
+    },
+    {
+      "id": 5,
+      "type": "graph",
+      "title": "Repair Success Rate",
+      "description": "Ratio of successful repairs to total repair executions.",
+      "targets": [
+        {
+          "expr": "rate(sweeper_repair_success_total[5m]) / clamp_min(rate(sweeper_repair_executions_total[5m]), 0.001)",
+          "legendFormat": "success rate"
+        }
+      ],
+      "gridPos": {"x": 12, "y": 4, "w": 12, "h": 6}
+    },
+    {
+      "id": 6,
+      "type": "table",
+      "title": "Check Status (latest)",
+      "description": "Per-check status gauges: 1=ok, 2=warn, 3=crit.",
+      "targets": [
+        {
+          "expr": "sweeper_check_status",
+          "format": "table",
+          "instant": true
+        }
+      ],
+      "gridPos": {"x": 0, "y": 10, "w": 24, "h": 8}
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=iPracticom Sweeper - run health check every 5 minutes
+Documentation=https://github.com/dizeldz20-ux/ipracticom-sweeper-private
+
+[Timer]
+# Run 2 minutes after boot, then every 5 minutes
+OnBootSec=2min
+OnUnitActiveSec=5min
+# AccuracySec — randomize start by up to 30s to avoid thundering herd
+# in a fleet with multiple instances.
+AccuracySec=30s
+# If we miss a window, run as soon as possible after catching up.
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{% block title %}סוויפר iPracticom{% endblock %}</title>
+<meta name="theme-color" content="#0d1117">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="site-header">
+  <div class="container">
+    <div class="brand">
+      <span class="brand-mark">S</span>
+      <span class="brand-name">סוויפר iPracticom</span>
+    </div>
+    <nav class="site-nav">
+      <a href="{{ url_for('index') }}" {% if request.endpoint == 'index' %}class="active"{% endif %}>לוח בקרה</a>
+      <a href="{{ url_for('history') }}" {% if request.endpoint == 'history' %}class="active"{% endif %}>היסטוריה</a>
+      <a href="{{ url_for('approvals_view') }}" {% if request.endpoint in ('approvals_view', 'approval_detail', 'approval_approve', 'approval_reject') %}class="active"{% endif %}>אישורים</a>
+      <a href="{{ url_for('settings') }}" {% if request.endpoint in ('settings', 'settings_test') %}class="active"{% endif %}>הגדרות</a>
+      <a href="{{ url_for('settings_connectors') }}" {% if request.endpoint == 'settings_connectors' %}class="active"{% endif %}>מחברים</a>
+      <a href="{{ url_for('fleet_view') }}" {% if request.endpoint in ('fleet_view', 'fleet_host_detail') %}class="active"{% endif %}>צי</a>
+      <a href="{{ url_for('inspector_view') }}" {% if request.endpoint in ('inspector_view', 'inspector_host') %}class="active"{% endif %}>מפקח בדיקות</a>
+      <a href="{{ url_for('catalogue_view') }}" {% if request.endpoint in ('catalogue_view', 'catalogue_module') %}class="active"{% endif %}>קטלוג</a>
+      <a href="{{ url_for('chat.chat_index') }}" {% if request.endpoint and request.endpoint.startswith('chat.') %}class="active"{% endif %}>צ'אט</a>
+    </nav>
+  </div>
+</header>
+
+<main class="container">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="container">
+    {% if identity %}
+      <span>
+        {% if identity.kind == "remote" %}
+          ◉ {{ identity.server_id }} · {{ identity.base_url }}
+        {% else %}
+          ◉ {{ identity.server_id }}
+        {% endif %}
+      </span>
+      <span class="sep">·</span>
+    {% endif %}
+    <span dir="ltr">{{ now_iso }}</span>
+    {% if is_remote %}
+      <span class="sep">·</span>
+      <span class="mode-badge">מצב מרוחק</span>
+    {% endif %}
+    <span class="sep">·</span>
+    <a href="{{ url_for('healthz') }}">/healthz</a>
+  </div>
+</footer>
+</body>
+</html>

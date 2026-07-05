@@ -1,0 +1,183 @@
+{% extends "base_spa.html" %}
+{% block title %}היסטוריה — סוויפר iPracticom{% endblock %}
+{% block content %}
+
+<!-- ============ סקציה 1: ריצות סריקה ============ -->
+<div class="section">
+  <h2 class="section-title">ריצות סריקה
+    <span class="count">{{ runs|length }} אירועי ניטור</span>
+  </h2>
+  {% if is_remote %}
+    <div class="remote-banner">◉ צפייה באירועים מהסוכן המרוחק</div>
+  {% endif %}
+  {% if runs %}
+    <div class="history-row history-head">
+      <span>זמן</span>
+      <span>מודול</span>
+      <span>סטטוס</span>
+    </div>
+    {% for r in runs[-30:]|reverse %}
+      <div class="history-row">
+        <span class="history-ts" dir="ltr">{{ r.ts }}</span>
+        <span class="history-module">{{ r.module }}</span>
+        <span class="history-status {{ r.status }}">{{ r.status | module_status_hebrew }}</span>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-title">אין אירועי ניטור עדיין</div>
+      <p>הסוכן רץ כל 5 דקות. אירועים יופיעו כאן.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- ============ סקציה 2: יומן תיקונים ============ -->
+<div class="section">
+  <h2 class="section-title">יומן תיקונים
+    <span class="count">{{ repairs|length }} פעולות</span>
+  </h2>
+  {% if repairs %}
+    <div class="history-row history-head repairs">
+      <span>זמן</span>
+      <span>סוג</span>
+      <span>פעולה</span>
+      <span>מבצע</span>
+      <span>תוצאה</span>
+    </div>
+    {% for r in repairs %}
+      <div class="history-row repairs">
+        <span><span class="label-mobile">זמן:</span><span class="history-ts" dir="ltr">{{ r.ts.split('T')[1][:8] if 'T' in r.ts else r.ts }}</span></span>
+        <span><span class="label-mobile">סוג:</span><span class="history-status {{ 'crit' if r.kind == 'repair_failed' else ('warn' if r.kind == 'repair_rejected' else 'ok') }}">
+          {% if r.kind == 'repair_proposed' %}הצעה
+          {% elif r.kind == 'repair_approved' %}אושר
+          {% elif r.kind == 'repair_executed' %}בוצע
+          {% elif r.kind == 'repair_failed' %}נכשל
+          {% elif r.kind == 'repair_rejected' %}נדחה
+          {% else %}{{ r.kind }}{% endif %}
+        </span></span>
+        <span>
+          <span class="label-mobile">פעולה:</span><span class="history-module">{{ r.action }}{% if r.target %} <span style="color: var(--text-mute);">({{ r.target }})</span>{% endif %}</span>
+          {% if r.error %}
+            <div style="color: var(--danger); font-size: 11px; margin-top: 4px;">{{ r.error[:120] }}{% if r.error|length > 120 %}…{% endif %}</div>
+          {% elif r.message %}
+            <div style="color: var(--text-mute); font-size: 11px; margin-top: 4px;">{{ r.message[:120] }}{% if r.message|length > 120 %}…{% endif %}</div>
+          {% endif %}
+        </span>
+        <span><span class="label-mobile">מבצע:</span><span style="font-size: 11px; color: var(--text-soft);">{{ r.actor }}</span></span>
+        <span>
+          <span class="label-mobile">תוצאה:</span>
+          {% if r.success == True %}<span style="color: var(--accent);">✓</span>
+          {% elif r.success == False %}<span style="color: var(--danger);">✗</span>
+          {% else %}<span style="color: var(--text-mute);">—</span>{% endif %}
+        </span>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-title">אין פעולות תיקון עדיין</div>
+      <p>כל תיקון אוטומטי או מאושר-ידנית יופיע כאן.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- ============ סקציה 3: הצעות תיקון ============ -->
+<div class="section">
+  <h2 class="section-title">הצעות תיקון
+    <span class="count">{{ proposals|length }} סה"כ</span>
+  </h2>
+  {% if proposals %}
+    <div class="history-row history-head proposals">
+      <span>נוצרה</span>
+      <span>פעולה</span>
+      <span>סיבה</span>
+      <span>סטטוס</span>
+    </div>
+    {% for p in proposals %}
+      <div class="history-row proposals">
+        <span><span class="label-mobile">נוצרה:</span><span class="history-ts" dir="ltr">{{ p.created_at.split('T')[1][:8] if 'T' in p.created_at else p.created_at }}</span></span>
+        <span><span class="label-mobile">פעולה:</span><span class="history-module">{{ p.action }}</span></span>
+        <span><span class="label-mobile">סיבה:</span><span style="font-size: 12px; color: var(--text-soft);">{{ p.reason[:80] }}{% if p.reason|length > 80 %}…{% endif %}</span></span>
+        <span>
+          <span class="label-mobile">סטטוס:</span>
+          <span class="history-status {{ 'ok' if p.status in ['approved', 'executed'] else ('crit' if p.status == 'rejected' else 'warn') }}">
+            {% if p.status == 'pending' %}ממתינה
+            {% elif p.status == 'approved' %}אושרה
+            {% elif p.status == 'rejected' %}נדחתה
+            {% elif p.status == 'executed' %}בוצעה
+            {% elif p.status == 'expired' %}פג תוקף
+            {% elif p.status == 'failed' %}נכשלה
+            {% else %}{{ p.status }}{% endif %}
+          </span>
+          {% if p.status == 'pending' %}
+            <div style="margin-top: 4px;">
+              <a href="{{ url_for('approval_detail', pid=p.id) }}" style="font-size: 11px;">פתח</a>
+            </div>
+          {% endif %}
+        </span>
+      </div>
+    {% endfor %}
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-state-title">אין הצעות</div>
+      <p>כשהסוכן יזהה בעיה שדורשת תיקון רגיש, ההצעה תופיע כאן.</p>
+    </div>
+  {% endif %}
+</div>
+
+<!-- ============ סקציה 4: טיימליין (אופציונלי, נפתח בלחיצה) ============ -->
+<div class="section">
+  <h2 class="section-title">
+    טיימליין תיקונים
+    <a href="#" onclick="document.getElementById('timeline-body').style.display='block'; return false;" style="font-size: 12px; font-weight: 400;">הצג</a>
+  </h2>
+  <div id="timeline-body" style="display: none;">
+    {% if repairs %}
+      {% set ns = namespace(events=[]) %}
+      {% for r in repairs %}
+        {% set _ = ns.events.append({
+            'ts': r.ts,
+            'kind': r.kind,
+            'action': r.action,
+            'target': r.target,
+            'actor': r.actor,
+            'success': r.success,
+            'message': r.message,
+            'error': r.error,
+            'proposal_id': r.proposal_id,
+        }) %}
+      {% endfor %}
+      {% set events = ns.events %}
+      <div class="timeline">
+        {% for e in events %}
+          <div class="timeline-item {{ 'ok' if e.success == True else ('err' if e.success == False else 'pending') }}">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+              <div class="timeline-time" dir="ltr">{{ e.ts.split('T')[1][:12] if 'T' in e.ts else e.ts }}</div>
+              <div class="timeline-title">
+                {% if e.kind == 'repair_proposed' %}<span style="color: var(--warning);">📋 הצעה:</span>
+                {% elif e.kind == 'repair_approved' %}<span style="color: var(--accent);">✓ אושר על-ידי {{ e.actor }}:</span>
+                {% elif e.kind == 'repair_executed' %}<span style="color: var(--accent);">⚙ בוצע:</span>
+                {% elif e.kind == 'repair_failed' %}<span style="color: var(--danger);">✗ נכשל:</span>
+                {% elif e.kind == 'repair_rejected' %}<span style="color: var(--text-mute);">⊘ נדחה:</span>
+                {% else %}<span>{{ e.kind }}:</span>{% endif %}
+                <strong>{{ e.action }}</strong>{% if e.target %} <span style="color: var(--text-mute);">({{ e.target }})</span>{% endif %}
+              </div>
+              {% if e.error %}
+                <div class="timeline-detail" style="color: var(--danger);">{{ e.error[:200] }}{% if e.error|length > 200 %}…{% endif %}</div>
+              {% elif e.message %}
+                <div class="timeline-detail">{{ e.message[:200] }}{% if e.message|length > 200 %}…{% endif %}</div>
+              {% endif %}
+              {% if e.proposal_id %}
+                <div class="timeline-meta" dir="ltr">proposal: {{ e.proposal_id[:12] }}</div>
+              {% endif %}
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="empty-state">אין אירועים להצגה</div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

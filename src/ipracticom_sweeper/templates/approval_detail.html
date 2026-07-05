@@ -1,0 +1,62 @@
+{% extends "base_spa.html" %}
+{% block title %}הצעת תיקון {{ proposal.id[:8] }} — סוויפר iPracticom{% endblock %}
+{% block content %}
+
+<div class="section">
+  <h2 class="section-title">הצעת תיקון: {{ proposal.action }}
+    <span class="count" dir="ltr">{{ proposal.id }}</span>
+  </h2>
+
+  <div style="display: grid; grid-template-columns: auto 1fr; gap: 12px 16px; font-size: 13px; margin-bottom: 20px;">
+    <span style="color: var(--text-mute);">נוצרה:</span>
+    <span dir="ltr">{{ proposal.created_at }}</span>
+
+    <span style="color: var(--text-mute);">סטטוס:</span>
+    <span>{{ proposal.status }}</span>
+
+    <span style="color: var(--text-mute);">מקור:</span>
+    <span>diagnose → {{ proposal.action }}</span>
+  </div>
+
+  <h3 style="font-size: 14px; font-weight: 700; color: var(--text); margin: 20px 0 8px;">סיבה</h3>
+  <div class="approval-proposal">{{ proposal.reason }}</div>
+
+  {% if proposal.problem %}
+    <h3 style="font-size: 14px; font-weight: 700; color: var(--text); margin: 20px 0 8px;">הבעיה שזוהתה</h3>
+    <div style="background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--text-soft); margin-bottom: 20px;">
+      <div><strong>סוג:</strong> {{ proposal.problem.kind }}</div>
+      <div><strong>חומרה:</strong> {{ proposal.problem.severity }}</div>
+      <div><strong>פירוט:</strong> {{ proposal.problem.detail }}</div>
+    </div>
+  {% endif %}
+
+  <h3 style="font-size: 14px; font-weight: 700; color: var(--text); margin: 20px 0 8px;">מה הסוכן יעשה אם תאשר</h3>
+  <div class="approval-proposal">{{ proposal.proposed_command }}</div>
+
+  {% if proposal.status == 'pending' %}
+    <form data-spa-action="{{ url_for('approval_approve', pid=proposal.id) }}" data-spa-success="התיקון אושר" data-spa-redirect="{{ url_for('approvals_view') }}" method="POST" style="display: inline;">
+      <input type="hidden" name="actor" value="operator">
+      <button type="submit" class="btn-primary" style="margin-inline-end: 8px;"
+              onclick="return confirm('לאשר ולהפעיל את התיקון?')">
+        ✓ אשר והפעל
+      </button>
+    </form>
+    <form data-spa-action="{{ url_for('approval_reject', pid=proposal.id) }}" data-spa-success="ההצעה נדחתה" data-spa-redirect="{{ url_for('approvals_view') }}" method="POST" style="display: inline;">
+      <input type="hidden" name="actor" value="operator">
+      <button type="submit" class="btn-danger"
+              onclick="return confirm('לדחות את ההצעה?')">
+        ✗ דחה
+      </button>
+    </form>
+  {% else %}
+    <div class="notice notice-{{ 'ok' if proposal.status == 'executed' else 'err' }}">
+      ההצעה {{ proposal.status }} אין אפשרות לאשר או לדחות שוב.
+    </div>
+  {% endif %}
+
+  <p style="margin-top: 16px;">
+    <a href="{{ url_for('approvals_view') }}" style="color: var(--text-mute); font-size: 13px;">← חזרה לרשימת האישורים</a>
+  </p>
+</div>
+
+{% endblock %}

@@ -1,0 +1,20 @@
+{# v0.6.0 — slice 5.2: v6 layout with sidebar.
+   Extends base.html (which still loads Heebo + style.css).
+   Adds: sidebar partial + v6 main content area. #}
+{% extends "base.html" %}
+{% block content %}
+<div class="v6-shell">
+  {% include "_v6_sidebar.html" %}
+  <section class="v6-main">
+    {% block v6_content %}{% endblock %}
+  </section>
+</div>
+
+<!-- Progressive SPA wiring: same as base_spa.html so v6 pages can
+     use data-spa-action + window.sweeper.toast. base.html is the
+     shared shell for v6, so we inject here. -->
+<script src="/static/sweeper.js" defer></script>
+<div id="toast-host"
+     class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 items-center pointer-events-none"
+     aria-live="polite" aria-atomic="true"></div>
+{% endblock %}

@@ -1,0 +1,329 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  /* Distinctive display face for console headings + numeric readouts. */
+  --font-display: "Space Grotesk", "Inter", sans-serif;
+  /* Brand accent scale (Command Center) */
+  --color-accent: #6366f1;
+  --color-accent-2: #22d3ee;
+}
+
+/* --- Command Center premium design tokens --------------------------------- */
+:root {
+  --bg: #05070e;
+  --bg-2: #070a13;
+  --panel: #0b0f1a;
+  --panel-glass: rgba(15, 20, 33, 0.72);
+  --border: rgba(148, 163, 184, 0.10);
+  --border-strong: rgba(148, 163, 184, 0.18);
+  --hairline: rgba(255, 255, 255, 0.06);
+  --shadow-md: 0 1px 0 0 rgba(255, 255, 255, 0.05) inset, 0 24px 48px -28px rgba(0, 0, 0, 0.85);
+  --shadow-lg: 0 1px 0 0 rgba(255, 255, 255, 0.06) inset, 0 40px 80px -40px rgba(0, 0, 0, 0.9);
+  --radius: 1.25rem;
+}
+
+@layer base {
+  :root {
+    /* Tells the browser this page is dark, so native chrome it draws itself —
+       scrollbars, number-input spinners, autofill, selection — renders in a
+       dark variant instead of the light OS default that clashes with the UI. */
+    color-scheme: dark;
+  }
+  body {
+    @apply text-slate-200 antialiased font-sans;
+    background: var(--bg);
+    /* Cinematic depth: layered radial accents + vignette */
+    background-image:
+      radial-gradient(1100px 620px at 88% -8%, rgba(99, 102, 241, 0.16), transparent 60%),
+      radial-gradient(900px 520px at 8% 4%, rgba(34, 211, 238, 0.08), transparent 55%),
+      radial-gradient(1200px 900px at 50% 120%, rgba(76, 29, 149, 0.14), transparent 60%),
+      linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+  }
+  /* Faint technical grid overlay for the command-center feel */
+  body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image:
+      linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
+    background-size: 46px 46px;
+    -webkit-mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 78%);
+    mask-image: radial-gradient(circle at 50% 30%, #000 0%, transparent 78%);
+  }
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px rgba(99, 102, 241, 0.6);
+    border-radius: 0.5rem;
+  }
+  ::selection { background: rgba(99, 102, 241, 0.35); color: #fff; }
+}
+
+/* --- Command Center surfaces + primitives --------------------------------- */
+@layer components {
+  .panel {
+    position: relative;
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.028), rgba(255, 255, 255, 0) 42%),
+      var(--panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
+  }
+  .panel::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0) 30%);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.7;
+  }
+  .panel-hover {
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+  .panel-hover:hover {
+    transform: translateY(-2px);
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-lg);
+  }
+  .glass {
+    background: var(--panel-glass);
+    backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%);
+    border: 1px solid var(--border);
+  }
+  .icon-tile {
+    display: grid;
+    place-items: center;
+    border-radius: 0.85rem;
+    border: 1px solid var(--hairline);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  }
+  .seg {
+    display: inline-flex;
+    padding: 0.25rem;
+    gap: 0.25rem;
+    border-radius: 0.85rem;
+    background: rgba(2, 6, 15, 0.55);
+    border: 1px solid var(--border);
+  }
+  .seg-item {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.6rem;
+    color: rgb(148, 163, 184);
+    transition: color 0.18s ease, background 0.18s ease;
+    white-space: nowrap;
+  }
+  .seg-item:hover { color: rgb(226, 232, 240); }
+  .seg-item[data-active="true"] {
+    color: #fff;
+    background: linear-gradient(180deg, rgba(99, 102, 241, 0.9), rgba(79, 70, 229, 0.9));
+    box-shadow: 0 4px 14px -6px rgba(99, 102, 241, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+}
+
+@layer utilities {
+  .num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+  .text-glow { text-shadow: 0 0 18px currentColor; }
+  .stagger > * { animation: view-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .stagger > *:nth-child(1) { animation-delay: 0.02s; }
+  .stagger > *:nth-child(2) { animation-delay: 0.07s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.12s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.17s; }
+  .stagger > *:nth-child(5) { animation-delay: 0.22s; }
+  .stagger > *:nth-child(6) { animation-delay: 0.27s; }
+  .stagger > *:nth-child(7) { animation-delay: 0.32s; }
+  .stagger > *:nth-child(8) { animation-delay: 0.37s; }
+  .pulse-glow { animation: pulse-glow 2.4s ease-in-out infinite; }
+  .spin-slow { animation: spin 18s linear infinite; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0), 0 0 24px -6px rgba(244, 63, 94, 0.45); }
+  50%      { box-shadow: 0 0 0 3px rgba(244, 63, 94, 0.14), 0 0 34px -4px rgba(244, 63, 94, 0.7); }
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* --- Themed scrollbars (Firefox + modern Chromium) -------------------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--color-indigo-500) 45%, var(--color-slate-700)) transparent;
+}
+/* Older/other WebKit engines that don't yet honor scrollbar-color. */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: color-mix(in oklch, var(--color-indigo-500) 40%, var(--color-slate-700));
+  border-radius: 9999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: color-mix(in oklch, var(--color-indigo-400) 55%, var(--color-slate-700));
+  background-clip: padding-box;
+}
+
+/* Native <input type=number> spinner arrows render as light, un-themed OS
+   chrome — hide them; the fader + direct typing cover increment/decrement. */
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* --- Add-machine wizard: "control console" motion + fader controls --------- */
+@keyframes wizard-overlay-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes wizard-panel-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes wizard-rise-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.wizard-overlay-in { animation: wizard-overlay-in 180ms ease-out both; }
+.wizard-panel-in { animation: wizard-panel-in 320ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+.wizard-rise-in { animation: wizard-rise-in 360ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* A slim "fader" range control — filled track via accent-color, precise thumb. */
+.fader {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 4px;
+  border-radius: 9999px;
+  background: color-mix(in oklch, var(--color-slate-700) 70%, transparent);
+  accent-color: var(--color-indigo-500);
+  cursor: pointer;
+}
+.fader::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--color-indigo-400);
+  border: 2px solid var(--color-slate-950);
+  box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-indigo-400) 60%, transparent);
+  transition: box-shadow 140ms ease, background 140ms ease;
+}
+.fader::-webkit-slider-thumb:hover {
+  background: var(--color-indigo-300);
+  box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-indigo-500) 30%, transparent);
+}
+.fader::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: var(--color-indigo-400);
+  border: 2px solid var(--color-slate-950);
+}
+
+/* Slow heartbeat pulse for FreeSWITCH liveness checks. */
+@keyframes wizard-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 color-mix(in oklch, var(--color-emerald-400) 55%, transparent); }
+  50% { opacity: 0.65; box-shadow: 0 0 0 4px color-mix(in oklch, var(--color-emerald-400) 0%, transparent); }
+}
+.wizard-pulse { animation: wizard-pulse 2.4s ease-in-out infinite; }
+
+/* --- AI assistant (Chat) premium surface + message motion ----------------- */
+.chat-surface {
+  background:
+    radial-gradient(120% 80% at 100% 0%, color-mix(in oklch, var(--color-indigo-600) 14%, transparent), transparent 60%),
+    radial-gradient(120% 80% at 0% 100%, color-mix(in oklch, var(--color-violet-600) 12%, transparent), transparent 55%),
+    var(--color-slate-900);
+}
+@keyframes chat-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+.chat-in { animation: chat-in 300ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* View enter transition. Replaces the `animate-in fade-in` utility classes that
+   were used app-wide but never actually ran (the tailwindcss-animate plugin is
+   not installed), so every screen change was static. */
+@keyframes view-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+.view-in { animation: view-in 480ms cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wizard-overlay-in, .wizard-panel-in, .wizard-rise-in, .wizard-pulse, .chat-in, .view-in,
+  .pulse-glow, .spin-slow, .stagger > * {
+    animation: none !important;
+  }
+}
+
+@media print {
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  body::before { display: none !important; }
+  aside {
+    display: none !important;
+  }
+  main {
+    background: white !important;
+  }
+  .panel {
+    background: white !important;
+    border-color: #e2e8f0 !important;
+    box-shadow: none !important;
+  }
+  .panel::before { display: none !important; }
+  .bg-slate-950, .bg-slate-900, .bg-slate-800 {
+    background: transparent !important;
+    border-color: #e2e8f0 !important;
+  }
+  * {
+    color: black !important;
+  }
+  input, select, button {
+    display: none !important;
+  }
+  table th, table td {
+    border-bottom: 1px solid #cbd5e1 !important;
+  }
+  .text-white, .text-slate-200, .text-slate-300, .text-slate-400, .text-slate-500 {
+    color: #0f172a !important;
+  }
+  .text-rose-400, .text-rose-500 { color: #e11d48 !important; }
+  .text-amber-400, .text-amber-500 { color: #d97706 !important; }
+  .text-emerald-400, .text-emerald-500 { color: #059669 !important; }
+}

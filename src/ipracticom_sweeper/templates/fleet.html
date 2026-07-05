@@ -1,0 +1,463 @@
+{% extends "base_spa.html" %}
+{% block title %}צי שרתים — סוויפר iPracticom{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1>צי שרתים</h1>
+  <div class="subtitle">
+    {{ summary.total_hosts }} שרת{{ '' if summary.total_hosts == 1 else 'ים' }}
+    שמנוטרים דרך AWS SSM.
+    {% if not connectors %}
+      <a href="{{ url_for('settings_connectors') }}" class="link-cta">הוסף connector →</a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Stats row -->
+<div class="metrics-row">
+  <div class="metric">
+    <div class="metric-label">סה"כ שרתים</div>
+    <div class="metric-value">{{ summary.total_hosts }}</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">תקינים</div>
+    <div class="metric-value green">{{ summary.healthy }}</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">אזהרה</div>
+    <div class="metric-value {{ 'orange' if summary.warning > 0 else 'green' }}">{{ summary.warning }}</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">קריטי</div>
+    <div class="metric-value {{ 'red' if summary.critical > 0 else 'green' }}">{{ summary.critical }}</div>
+  </div>
+  <div class="metric">
+    <div class="metric-label">DEFCON הצי</div>
+    <div class="metric-value {{ 'red' if summary.overall_defcon <= 2 else ('orange' if summary.overall_defcon <= 4 else 'green') }}">
+      {{ summary.overall_defcon }}
+    </div>
+  </div>
+</div>
+
+<!-- Empty state -->
+{% if not connectors %}
+<div class="empty-state">
+  <p>עוד לא הוגדרו connectors.</p>
+  <a href="{{ url_for('settings_connectors') }}" class="btn-primary">הוסף את הראשון</a>
+</div>
+{% endif %}
+
+<!-- Host cards grid -->
+{% if summary.hosts %}
+<div class="host-grid">
+  {% for h in summary.hosts %}
+  <div class="host-card defcon-{{ h.defcon }}" data-host="{{ h.host_id }}">
+    <div class="host-card-header">
+      <div class="host-name">{{ h.host_id }}</div>
+      <div class="host-defcon">
+        <span class="defcon-badge defcon-{{ h.defcon }}">{{ h.defcon }}</span>
+      </div>
+    </div>
+
+    <div class="host-modules">
+      {% for module, status in h.modules.items() %}
+        <span class="module-pill module-{{ status }}" title="{{ module }}: {{ status }}">
+          {{ module }}{% if status != 'ok' %} ⚠{% endif %}
+        </span>
+      {% endfor %}
+    </div>
+
+    <div class="host-meta">
+      <div class="meta-row">
+        <span class="meta-label">בעיות</span>
+        <span class="meta-value">{{ h.problems_count }}</span>
+      </div>
+      <div class="meta-row">
+        <span class="meta-label">איסוף אחרון</span>
+        <span class="meta-value" dir="ltr">
+          {% if h.last_seen > 0 %}
+            {{ h.last_seen | int }}
+          {% else %}
+            <em>אין נתונים</em>
+          {% endif %}
+        </span>
+      </div>
+    </div>
+
+    <button type="button" class="btn-open-modal" data-host="{{ h.host_id }}">
+      פתח פרטים →
+    </button>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Modal -->
+<div id="hostModal" class="modal-overlay" style="display:none;">
+  <div class="modal-content">
+    <button type="button" class="modal-close" aria-label="סגור">×</button>
+    <div id="modal-body">
+      <div class="modal-loading">טוען…</div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* Slice 7: fleet cards — absolute values to match dark SPA shell.
+   The previous version used --bg-elevated/--border/--accent which weren't
+   defined here, so cards looked washed out against the dark slate background. */
+.host-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 18px;
+  margin-top: 24px;
+}
+.host-card {
+  background: linear-gradient(180deg, #0f172a 0%, #1e293b 100%);
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 18px;
+  transition: transform 120ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  cursor: default;
+  position: relative;
+  overflow: hidden;
+}
+.host-card:hover {
+  border-color: #6366f1;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+.host-card.defcon-1, .host-card.defcon-2 {
+  border-color: #f87171;
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.2), 0 4px 12px rgba(248, 113, 113, 0.1);
+}
+.host-card.defcon-3, .host-card.defcon-4 {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 1px rgba(251, 191, 36, 0.2), 0 4px 12px rgba(251, 191, 36, 0.08);
+}
+.host-card.defcon-5 {
+  border-color: #34d399;
+  box-shadow: 0 0 0 1px rgba(52, 211, 153, 0.2);
+}
+/* DEFCON accent stripe at the top */
+.host-card::before {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; left: 0;
+  height: 3px;
+}
+.host-card.defcon-1::before, .host-card.defcon-2::before { background: linear-gradient(90deg, #f87171, #ef4444); }
+.host-card.defcon-3::before, .host-card.defcon-4::before { background: linear-gradient(90deg, #fbbf24, #f59e0b); }
+.host-card.defcon-5::before { background: linear-gradient(90deg, #34d399, #10b981); }
+
+.host-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #334155;
+}
+.host-name {
+  font-weight: 700;
+  font-size: 17px;
+  color: #f1f5f9;
+  letter-spacing: -0.01em;
+}
+.defcon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 14px;
+  min-width: 36px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+.defcon-badge.defcon-1, .defcon-badge.defcon-2 { background: #dc2626; color: white; box-shadow: 0 0 8px rgba(220, 38, 38, 0.6); }
+.defcon-badge.defcon-3, .defcon-badge.defcon-4 { background: #f59e0b; color: #1f2937; box-shadow: 0 0 8px rgba(245, 158, 11, 0.5); }
+.defcon-badge.defcon-5 { background: #10b981; color: white; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
+
+.host-modules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 12px;
+  min-height: 24px;
+}
+.module-pill {
+  font-size: 10px;
+  padding: 2px 7px;
+  border-radius: 10px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.3px;
+}
+.module-ok    { background: rgba(63,185,80,0.15);  color: var(--ok); }
+.module-warn  { background: rgba(210,153,34,0.15); color: var(--warning); }
+.module-crit  { background: rgba(248,81,73,0.15);  color: var(--danger); }
+
+.host-meta {
+  font-size: 12px;
+  color: var(--slate);
+  margin-bottom: 12px;
+}
+.meta-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+}
+.meta-label { color: var(--slate); }
+.meta-value { color: var(--fg); font-family: var(--font-mono); }
+
+.btn-open-modal {
+  background: var(--bg);
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  width: 100%;
+  font-family: inherit;
+}
+.btn-open-modal:hover { background: var(--accent); color: var(--bg); }
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  color: var(--slate);
+  background: var(--bg-elevated);
+  border-radius: 8px;
+  margin-top: 20px;
+}
+.link-cta {
+  color: var(--accent);
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.modal-content {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  max-width: 720px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  padding: 24px;
+}
+.modal-close {
+  position: absolute;
+  top: 8px;
+  left: 12px;  /* RTL: left side */
+  background: none;
+  border: none;
+  color: var(--slate);
+  font-size: 28px;
+  cursor: pointer;
+  line-height: 1;
+}
+.modal-loading {
+  text-align: center;
+  padding: 40px;
+  color: var(--slate);
+}
+
+.modal-section {
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+.modal-section:last-child { border-bottom: none; }
+.modal-section h3 {
+  font-size: 14px;
+  margin: 0 0 10px 0;
+  color: var(--accent);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 10px;
+}
+.metric-box {
+  background: var(--bg-elevated);
+  padding: 10px;
+  border-radius: 4px;
+}
+.metric-box .lbl { color: var(--slate); font-size: 11px; }
+.metric-box .val { font-size: 18px; font-weight: 700; color: var(--fg); font-family: var(--font-mono); }
+
+.history-entry {
+  background: var(--bg-elevated);
+  padding: 8px 10px;
+  margin: 6px 0;
+  border-radius: 4px;
+  font-size: 12px;
+  font-family: var(--font-mono);
+  border-right: 3px solid var(--border);
+}
+.history-entry.action { border-right-color: var(--accent); }
+.history-entry.error { border-right-color: var(--danger); }
+
+.tags { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.tag {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 8px;
+  font-size: 11px;
+  font-family: var(--font-mono);
+  direction: ltr;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  const modal = document.getElementById('hostModal');
+  const modalBody = document.getElementById('modal-body');
+
+  document.querySelectorAll('.btn-open-modal').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const host = btn.dataset.host;
+      modal.style.display = 'flex';
+      modalBody.innerHTML = '<div class="modal-loading">טוען נתונים של ' + host + '…</div>';
+      try {
+        const resp = await fetch('/fleet/host/' + encodeURIComponent(host));
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        renderModal(data);
+      } catch (e) {
+        modalBody.innerHTML = '<div class="modal-loading">שגיאה: ' + e.message + '</div>';
+      }
+    });
+  });
+
+  modal.querySelector('.modal-close').addEventListener('click', () => {
+    modal.style.display = 'none';
+  });
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) modal.style.display = 'none';
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') modal.style.display = 'none';
+  });
+
+  function renderModal(data) {
+    const c = data.connector || {};
+    const s = data.snapshot || {};
+    const dataInner = s.data || {};
+    const age = data.snapshot_age_seconds;
+
+    let html = '<h2 style="margin-top:0;">' + data.name + '</h2>';
+    html += '<div style="color:var(--slate); font-size:13px; margin-bottom:16px;">';
+    html += '<code dir="ltr">' + (c.instance_id || '?') + '</code>';
+    html += ' · ' + (c.region || '?');
+    if (c.tags && Object.keys(c.tags).length) {
+      html += ' · <span class="tags">';
+      for (const [k, v] of Object.entries(c.tags)) {
+        html += '<span class="tag">' + k + '=' + v + '</span>';
+      }
+      html += '</span>';
+    }
+    if (age != null) {
+      html += '<br>איסוף אחרון לפני ';
+      if (age < 60) html += Math.round(age) + ' שניות';
+      else if (age < 3600) html += Math.round(age / 60) + ' דקות';
+      else html += Math.round(age / 3600) + ' שעות';
+    } else {
+      html += '<br><em style="color:var(--danger);">אין נתונים עדיין — המתן לאיסוף הבא</em>';
+    }
+    html += '</div>';
+
+    if (!s.available && s.reason) {
+      html += '<div class="modal-section">';
+      html += '<h3>סטטוס SSM</h3>';
+      html += '<div style="color:var(--danger); font-family:var(--font-mono);">' + s.reason + '</div>';
+      html += '</div>';
+    }
+
+    if (dataInner.load || dataInner.memory || dataInner.disk) {
+      html += '<div class="modal-section"><h3>מטריקות עדכניות</h3><div class="metric-grid">';
+      const load = dataInner.load || {};
+      if (load['5m'] != null) html += metricBox('Load (5m)', load['5m'].toFixed(2));
+      const mem = dataInner.memory || {};
+      if (mem.used_percent != null) html += metricBox('Memory %', mem.used_percent.toFixed(1) + '%');
+      if (mem.total_kb) html += metricBox('Memory total', Math.round(mem.total_kb / 1024 / 1024) + ' GB');
+      const disk = dataInner.disk || {};
+      if (disk.used_percent != null) html += metricBox('Disk %', disk.used_percent.toFixed(1) + '%');
+      if (dataInner.uptime_seconds) html += metricBox('Uptime', Math.round(dataInner.uptime_seconds / 3600) + 'h');
+      if (dataInner.kernel) html += metricBox('Kernel', dataInner.kernel);
+      html += '</div></div>';
+    }
+
+    if (dataInner.top_processes && dataInner.top_processes.length) {
+      html += '<div class="modal-section"><h3>תהליכים (CPU גבוה)</h3>';
+      dataInner.top_processes.forEach(p => {
+        html += '<div class="history-entry">' +
+          'pid ' + p.pid + ' · ' + p.name +
+          ' · CPU ' + p.cpu_percent.toFixed(1) + '% · MEM ' + p.mem_percent.toFixed(1) + '%' +
+          '</div>';
+      });
+      html += '</div>';
+    }
+
+    if (dataInner.failed_units && dataInner.failed_units.length) {
+      html += '<div class="modal-section"><h3>Systemd נכשל</h3>';
+      dataInner.failed_units.forEach(u => {
+        html += '<div class="history-entry error">' + u + '</div>';
+      });
+      html += '</div>';
+    }
+
+    if (data.pending_approvals && data.pending_approvals.length) {
+      html += '<div class="modal-section"><h3>אישורים ממתינים</h3>';
+      data.pending_approvals.forEach(p => {
+        html += '<div class="history-entry">' + JSON.stringify(p) + '</div>';
+      });
+      html += '</div>';
+    }
+
+    if (data.repairs && data.repairs.length) {
+      html += '<div class="modal-section"><h3>היסטוריית תיקונים (' + data.repairs.length + ')</h3>';
+      data.repairs.slice(-15).reverse().forEach(r => {
+        html += '<div class="history-entry action">' +
+          (r.ts || r.timestamp || '') + ' · ' + (r.action || r.kind || '?') +
+          (r.host ? ' · ' + r.host : '') +
+          (r.success === false ? ' ❌' : ' ✓') +
+          '</div>';
+      });
+      html += '</div>';
+    } else {
+      html += '<div class="modal-section"><h3>היסטוריית תיקונים</h3>';
+      html += '<div style="color:var(--slate); font-size:13px;">אין תיקונים רשומים עבור שרת זה.</div>';
+      html += '</div>';
+    }
+
+    modalBody.innerHTML = html;
+  }
+
+  function metricBox(label, value) {
+    return '<div class="metric-box"><div class="lbl">' + label +
+           '</div><div class="val">' + value + '</div></div>';
+  }
+});
+</script>
+
+{% endblock %}
