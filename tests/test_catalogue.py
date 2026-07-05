@@ -117,6 +117,6 @@ def test_catalogue_module_handles_load_rules_failure(client):
 
 
 def test_base_html_links_to_catalogue(client):
-    r = client.get("/")
+    r = client.get("/legacy")
     body = r.get_data(as_text=True)
     assert 'href="/catalogue"' in body

@@ -19,8 +19,15 @@ def test_healthz(client):
     assert "server_id" in data
 
 
-def test_index_loads(client):
+def test_index_redirects_to_spa(client):
+    # The built SPA ships in-repo, so / must hand off to /app/.
     r = client.get("/")
+    assert r.status_code == 302
+    assert r.headers["Location"].endswith("/app/")
+
+
+def test_legacy_home_loads(client):
+    r = client.get("/legacy")
     assert r.status_code == 200
 
 
@@ -71,5 +78,5 @@ def test_index_with_result(client):
         "repairs_succeeded": 0,
     }
     with patch("ipracticom_sweeper.dashboard._read_last_result", return_value=fake):
-        r = client.get("/")
+        r = client.get("/legacy")
     assert r.status_code == 200

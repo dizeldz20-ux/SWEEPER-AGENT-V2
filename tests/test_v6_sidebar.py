@@ -66,7 +66,7 @@ def test_v6_route_returns_200_and_sidebar_markup():
 def test_v6_route_does_not_break_legacy_index():
     """`/` renders the unified SPA shell (v6 sidebar is on /v6 only)."""
     c = _client()
-    r = c.get("/")
+    r = c.get("/legacy")
     assert r.status_code == 200
     html = r.get_data(as_text=True)
     # Unified shell markers (slice 3, 2026-07-01: top-nav removed; sidebar carries nav)

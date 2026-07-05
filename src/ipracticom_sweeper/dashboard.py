@@ -392,9 +392,23 @@ def _fetch_v6_stats() -> dict:
 # --- Routes ------------------------------------------------------------------
 
 
+_WEBUI_INDEX = Path(__file__).resolve().parent / "webui" / "dist" / "index.html"
+
+
 @app.route("/")
 def index():
-    """Main dashboard — the unified SPA shell (AI Studio design) with real
+    """Root — the Command Center React SPA (served under /app/) is the
+    dashboard; redirect to it whenever the built bundle ships. The legacy
+    Jinja shell stays reachable at /legacy (sub-pages keep their routes).
+    """
+    if _WEBUI_INDEX.exists():
+        return redirect("/app/", code=302)
+    return legacy_home()
+
+
+@app.route("/legacy")
+def legacy_home():
+    """Legacy dashboard — the unified SPA shell (AI Studio design) with real
     snapshot data from the agent.
 
     /spa/a and /spa/b still exist for the side-by-side A/B comparison.

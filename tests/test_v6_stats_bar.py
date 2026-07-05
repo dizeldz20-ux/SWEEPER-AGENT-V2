@@ -60,7 +60,7 @@ def test_v6_does_not_use_legacy_placeholder_grid():
 def test_legacy_index_does_not_show_v6_layout():
     """`/` still uses base.html (additive contract preserved)."""
     c = _client()
-    r = c.get("/")
+    r = c.get("/legacy")
     html = r.get_data(as_text=True)
     assert "v6-stats-bar" not in html, "/ should not show v6 stats bar yet"
     assert "v6-sidebar" not in html

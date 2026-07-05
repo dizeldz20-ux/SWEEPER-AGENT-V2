@@ -90,7 +90,7 @@ def test_index_renders_spa_shell(client):
     The home uses its own thin template (`home.html`) that extends the shell;
     /spa/a and /spa/b stay self-contained for visual A/B comparison.
     """
-    rv = client.get("/")
+    rv = client.get("/legacy")
     assert rv.status_code == 200
     body = rv.get_data(as_text=True)
     # Unified shell markers (base_spa.html provides these)

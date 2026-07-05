@@ -109,7 +109,7 @@ def test_summarize_module_handles_empty_values():
 
 def test_base_html_links_to_inspector(client):
     """Nav menu exposes inspector link."""
-    r = client.get("/")
+    r = client.get("/legacy")
     body = r.get_data(as_text=True)
     assert url_for_inspector_in_nav(body) is True
 
